@@ -122,9 +122,15 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    signingConfigs {
+        getByName("debug") {
+            // Uses default debug keystore
+        }
+    }
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {
