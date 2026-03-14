@@ -8,6 +8,42 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
+    alias(libs.plugins.kotlinSerialization)
+}
+
+// Generate BuildConfig with git info
+val gitHashProvider = providers.exec { commandLine("git", "rev-parse", "--short", "HEAD") }
+    .standardOutput.asText.map { it.trim() }
+val gitCommitCountProvider = providers.exec { commandLine("git", "rev-list", "--count", "HEAD") }
+    .standardOutput.asText.map { it.trim() }
+val buildDateProvider = providers.exec { commandLine("date", "+%Y-%m-%d %H:%M:%S") }
+    .standardOutput.asText.map { it.trim() }
+
+val generateBuildConfig = tasks.register("generateBuildConfig") {
+    val outputDir = layout.buildDirectory.dir("generated/buildconfig")
+    val hash = gitHashProvider
+    val count = gitCommitCountProvider
+    val date = buildDateProvider
+    outputs.dir(outputDir)
+    inputs.property("gitHash", hash)
+    inputs.property("commitCount", count)
+    inputs.property("buildDate", date)
+    doLast {
+        val h = hash.get()
+        val c = count.get()
+        val d = date.get()
+        val dir = outputDir.get().asFile.resolve("it/bosler/numeracy")
+        dir.mkdirs()
+        dir.resolve("BuildConfig.kt").writeText(
+            "package it.bosler.numeracy\n\n" +
+            "object BuildConfig {\n" +
+            "    const val GIT_HASH = \"$h\"\n" +
+            "    const val BUILD_NUMBER = \"$c\"\n" +
+            "    const val VERSION_NAME = \"0.$c\"\n" +
+            "    const val BUILD_TIMESTAMP = \"$d\"\n" +
+            "}\n"
+        )
+    }
 }
 
 kotlin {
@@ -40,11 +76,11 @@ kotlin {
         binaries.executable()
     }
     
+    sourceSets.commonMain {
+        kotlin.srcDir(layout.buildDirectory.dir("generated/buildconfig"))
+    }
+
     sourceSets {
-        androidMain.dependencies {
-            implementation(libs.compose.uiToolingPreview)
-            implementation(libs.androidx.activity.compose)
-        }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
@@ -54,9 +90,14 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.kotlinx.serialization.json)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+        }
+        androidMain.dependencies {
+            implementation(libs.compose.uiToolingPreview)
+            implementation(libs.androidx.activity.compose)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
@@ -95,6 +136,9 @@ android {
 dependencies {
     debugImplementation(libs.compose.uiTooling)
 }
+
+tasks.matching { it.name.startsWith("compileKotlin") || it.name.startsWith("compile") && it.name.contains("Kotlin") }
+    .configureEach { dependsOn("generateBuildConfig") }
 
 compose.desktop {
     application {
