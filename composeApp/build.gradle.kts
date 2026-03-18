@@ -126,11 +126,23 @@ android {
         getByName("debug") {
             // Uses default debug keystore
         }
+        create("release") {
+            val ksFile = rootProject.file("release.jks")
+            if (ksFile.exists()) {
+                storeFile = ksFile
+                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "numeracy123"
+                keyAlias = System.getenv("KEY_ALIAS") ?: "numeracy"
+                keyPassword = System.getenv("KEY_PASSWORD") ?: "numeracy123"
+            }
+        }
     }
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (rootProject.file("release.jks").exists())
+                signingConfigs.getByName("release")
+            else
+                signingConfigs.getByName("debug")
         }
     }
     compileOptions {

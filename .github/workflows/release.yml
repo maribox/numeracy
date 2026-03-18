@@ -33,13 +33,21 @@ jobs:
         if: steps.tag.outputs.new_tag
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build APK
+      - name: Decode keystore
         if: steps.tag.outputs.new_tag
-        run: ./gradlew :composeApp:assembleDebug
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.jks
+
+      - name: Build signed release APK
+        if: steps.tag.outputs.new_tag
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew :composeApp:assembleRelease
 
       - name: Rename APK
         if: steps.tag.outputs.new_tag
-        run: mv composeApp/build/outputs/apk/debug/*.apk numeracy-${{ steps.tag.outputs.new_tag }}.apk
+        run: mv composeApp/build/outputs/apk/release/*.apk numeracy-${{ steps.tag.outputs.new_tag }}.apk
 
       - name: Create GitHub Release
         if: steps.tag.outputs.new_tag
