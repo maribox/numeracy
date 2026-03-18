@@ -31,7 +31,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import it.bosler.numeracy.BuildConfig
+import it.bosler.numeracy.persistence.AppContext
 import it.bosler.numeracy.util.PlatformBackHandler
 import it.bosler.numeracy.util.showBackButton
 
@@ -75,6 +82,45 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp),
         ) {
+            // Game Mode section
+            SectionHeader("Game Mode")
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingsCard {
+                var gameModeEnabled by remember {
+                    mutableStateOf(AppContext.runRepository.isGameModeEnabled())
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Game Mode",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.SemiBold,
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = "Timer, points, streaks, and animations",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = gameModeEnabled,
+                        onCheckedChange = {
+                            gameModeEnabled = it
+                            AppContext.runRepository.setGameModeEnabled(it)
+                        },
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // Help & About section

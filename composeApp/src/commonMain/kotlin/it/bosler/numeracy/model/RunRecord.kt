@@ -40,4 +40,5 @@ data class AnswerRecord(
 @Serializable
 data class AppData(
     val runs: List<RunRecord> = emptyList(),
+    val gameModeEnabled: Boolean = true,
 )

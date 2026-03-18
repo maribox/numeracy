@@ -59,6 +59,8 @@ fun ScenarioInfoSheet(
             ScenarioType.VOLUME_CONVERSION -> VolumeConversionInfo()
             ScenarioType.SPEED_CONVERSION -> SpeedConversionInfo()
             ScenarioType.DOOMSDAY -> DoomsdayInfo()
+            ScenarioType.SQUARING -> MathInfo("Squaring", "Square the number shown. For two-digit numbers, try breaking them into (a+b)² = a² + 2ab + b².")
+            ScenarioType.MULTIPLICATION -> MathInfo("Multiplication", "Multiply the two numbers. Try breaking into parts: 23 × 45 = 23 × 40 + 23 × 5.")
         }
     }
 }
@@ -1653,5 +1655,12 @@ private fun SpeedConversionInfo() {
     SubTitle("Fibonacci Trick")
     BodyText("Since 1.609 \u2248 \u03C6 (golden ratio), consecutive Fibonacci numbers approximate the conversion perfectly: 5\u21928, 8\u219213, 13\u219221, 21\u219234, 34\u219255, 55\u219289. For example, 55 mph \u2248 89 km/h.")
 
+    Spacer(modifier = Modifier.height(16.dp))
+}
+
+@Composable
+private fun MathInfo(title: String, description: String) {
+    SectionTitle(title)
+    BodyText(description)
     Spacer(modifier = Modifier.height(16.dp))
 }

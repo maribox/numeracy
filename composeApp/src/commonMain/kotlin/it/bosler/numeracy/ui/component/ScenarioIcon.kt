@@ -32,6 +32,9 @@ import numeracy.composeapp.generated.resources.img_scale
 import numeracy.composeapp.generated.resources.img_speedometer
 import numeracy.composeapp.generated.resources.img_tape
 import numeracy.composeapp.generated.resources.img_thermometer
+import numeracy.composeapp.generated.resources.img_chalkboard
+import numeracy.composeapp.generated.resources.img_squared
+import numeracy.composeapp.generated.resources.img_multiply
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
@@ -51,6 +54,8 @@ private val scenarioImages: Map<ScenarioType, DrawableResource> = mapOf(
     ScenarioType.VOLUME_CONVERSION to Res.drawable.img_measuring_cup,
     ScenarioType.SPEED_CONVERSION to Res.drawable.img_speedometer,
     ScenarioType.DOOMSDAY to Res.drawable.img_calendar,
+    ScenarioType.SQUARING to Res.drawable.img_squared,
+    ScenarioType.MULTIPLICATION to Res.drawable.img_multiply,
 )
 
 private val categoryImages: Map<Category, DrawableResource> = mapOf(
@@ -59,6 +64,7 @@ private val categoryImages: Map<Category, DrawableResource> = mapOf(
     Category.WORLD to Res.drawable.img_globe,
     Category.CONVERSIONS to Res.drawable.img_tape,
     Category.MATH_TRICKS to Res.drawable.img_lightbulb,
+    Category.GENERAL_MATH to Res.drawable.img_chalkboard,
 )
 
 fun scenarioImageRes(scenario: ScenarioType): DrawableResource? = scenarioImages[scenario]

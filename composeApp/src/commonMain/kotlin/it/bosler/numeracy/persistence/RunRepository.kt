@@ -40,6 +40,15 @@ class RunRepository(private val storage: FileStorage) {
         return loadAll().runs.filter { it.scenarioType == type.name }
     }
 
+    fun isGameModeEnabled(): Boolean = loadAll().gameModeEnabled
+
+    fun setGameModeEnabled(enabled: Boolean) {
+        val data = loadAll()
+        val updated = data.copy(gameModeEnabled = enabled)
+        cachedData = updated
+        storage.write(fileName, json.encodeToString(updated))
+    }
+
     fun getStats(type: ScenarioType): ScenarioStats {
         val runs = getRunsForScenario(type)
         val allAnswers = runs.flatMap { it.answers }

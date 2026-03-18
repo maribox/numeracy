@@ -2,7 +2,13 @@ package it.bosler.numeracy.ui.screen
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -52,6 +58,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -62,14 +69,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import it.bosler.numeracy.model.InputType
 import it.bosler.numeracy.model.ScenarioType
+import it.bosler.numeracy.ui.component.ConfettiEffect
 import it.bosler.numeracy.ui.component.NumPad
 import it.bosler.numeracy.ui.component.ScenarioInfoSheet
 import it.bosler.numeracy.ui.component.TimeInput
 import it.bosler.numeracy.ui.component.WeekdayPicker
 import it.bosler.numeracy.ui.component.question.QuestionDisplay
 import it.bosler.numeracy.util.PlatformBackHandler
+import it.bosler.numeracy.util.currentTimeMillis
 import it.bosler.numeracy.util.showBackButton
 import it.bosler.numeracy.viewmodel.PracticeViewModel
 
@@ -115,6 +125,7 @@ fun PracticeScreen(
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -210,6 +221,11 @@ fun PracticeScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
                         ) {
+                            AnswerDisplay(
+                                state = state,
+                                answerColor = answerColor,
+                                shakeOffset = shakeOffset.value,
+                            )
                             InputArea(
                                 state = state,
                                 viewModel = viewModel,
@@ -255,29 +271,63 @@ fun PracticeScreen(
                 }
 
                 if (!state.showInfo) {
-                    Column(
+                    // Answer display — between scrollable content and numpad, always visible
+                    AnswerDisplay(
+                        state = state,
+                        answerColor = answerColor,
+                        shakeOffset = shakeOffset.value,
+                    )
+                    InputArea(
+                        state = state,
+                        viewModel = viewModel,
+                        answerColor = answerColor,
+                        shakeOffset = shakeOffset.value,
+                        timeHours = timeHours,
+                        timeMinutes = timeMinutes,
+                        onTimeHoursChange = { timeHours = it },
+                        onTimeMinutesChange = { timeMinutes = it },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        InputArea(
-                            state = state,
-                            viewModel = viewModel,
-                            answerColor = answerColor,
-                            shakeOffset = shakeOffset.value,
-                            timeHours = timeHours,
-                            timeMinutes = timeMinutes,
-                            onTimeHoursChange = { timeHours = it },
-                            onTimeMinutesChange = { timeMinutes = it },
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                    )
                 }
             }
         }
 
     }
+
+    // Game mode effects overlay (on top of everything)
+    if (state.gameMode) {
+        ConfettiEffect(trigger = state.confettiTrigger)
+
+        // Floating points popup
+        if (state.lastPointsEarned > 0 && state.feedback?.isCorrect == true) {
+            val pointsAlpha = remember(state.totalAnswered) { Animatable(1f) }
+            val pointsOffset = remember(state.totalAnswered) { Animatable(0f) }
+
+            LaunchedEffect(state.totalAnswered) {
+                launch {
+                    pointsOffset.animateTo(-80f, tween(800))
+                }
+                launch {
+                    kotlinx.coroutines.delay(400)
+                    pointsAlpha.animateTo(0f, tween(400))
+                }
+            }
+
+            Text(
+                text = "+${state.lastPointsEarned}",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Black,
+                ),
+                color = Color(0xFFFFD600).copy(alpha = pointsAlpha.value),
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .offset { IntOffset(0, pointsOffset.value.toInt()) },
+            )
+        }
+    }
+    } // end outer Box
 }
 
 @Composable
@@ -365,50 +415,69 @@ private fun TopBar(
                 }
             }
 
-            // Segmented progress bar + streak (fixed height)
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
+            // Segmented progress bar — full width
+            Spacer(modifier = Modifier.height(6.dp))
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(20.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    .height(6.dp),
             ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(6.dp),
-                ) {
-                    if (state.answerHistory.isNotEmpty()) {
-                        SegmentedProgressBar(
-                            answers = state.answerHistory,
-                            accentColor = scenarioType.startColor,
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                        )
-                    }
+                if (state.answerHistory.isNotEmpty()) {
+                    SegmentedProgressBar(
+                        answers = state.answerHistory,
+                        accentColor = scenarioType.startColor,
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                    )
                 }
-                Box(
-                    modifier = Modifier.width(40.dp),
-                    contentAlignment = Alignment.CenterEnd,
-                ) {
-                    if (state.streak > 1) {
-                        Text(
-                            text = "\uD83D\uDD25${state.streak}",
-                            style = MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                            ),
-                            color = MaterialTheme.colorScheme.onBackground,
-                        )
-                    }
-                }
+            }
+
+            // Game mode: fire bar + score
+            if (state.gameMode) {
+                Spacer(modifier = Modifier.height(6.dp))
+                FireBar(
+                    fireLevel = state.fireLevel,
+                    points = state.points,
+                    boostTrigger = state.fireBoostTrigger,
+                    questionStartMillis = state.questionStartMillis,
+                )
             }
         }
     }
+
+@Composable
+private fun AnswerDisplay(
+    state: it.bosler.numeracy.viewmodel.PracticeState,
+    answerColor: Color,
+    shakeOffset: Float,
+) {
+    if (state.currentProblem.inputType == InputType.NUMBER || state.currentProblem.inputType == InputType.MONEY) {
+        Text(
+            text = state.userAnswer.ifEmpty { "\u200B" },
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 2.sp,
+            ),
+            color = answerColor,
+            modifier = Modifier
+                .padding(vertical = 2.dp)
+                .offset { IntOffset(shakeOffset.toInt(), 0) },
+        )
+        if (state.feedback?.isClose == true) {
+            Text(
+                text = "Exact: ${state.feedback!!.correctAnswer}",
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = Color(0xFFFF9800),
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+        }
+    }
+}
 
 @Composable
 private fun InputArea(
@@ -421,31 +490,12 @@ private fun InputArea(
     onTimeHoursChange: (Int) -> Unit,
     onTimeMinutesChange: (Int) -> Unit,
     compact: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
-    // Answer display -right above the numpad
-    if (state.currentProblem.inputType == InputType.NUMBER || state.currentProblem.inputType == InputType.MONEY) {
-        Text(
-            text = state.userAnswer.ifEmpty { "\u200B" },
-            style = MaterialTheme.typography.displaySmall.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp,
-            ),
-            color = answerColor,
-            modifier = Modifier
-                .padding(vertical = 4.dp)
-                .offset { IntOffset(shakeOffset.toInt(), 0) },
-        )
-        // Show correct answer when close but not exact
-        if (state.feedback?.isClose == true) {
-            Text(
-                text = "Exact: ${state.feedback!!.correctAnswer}",
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = Color(0xFFFF9800),
-                modifier = Modifier.padding(bottom = 4.dp),
-            )
-        }
-    }
-
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
     when (state.currentProblem.inputType) {
         InputType.NUMBER -> {
             NumPad(
@@ -506,6 +556,142 @@ private fun InputArea(
                 onSelected = { viewModel.onAnswerChanged(it) },
                 enabled = state.feedback == null,
             )
+        }
+    }
+    } // end Column
+}
+
+@Composable
+private fun FireBar(
+    fireLevel: Float,
+    points: Int,
+    boostTrigger: Int,
+    questionStartMillis: Long,
+) {
+    val animatedFire by animateFloatAsState(
+        targetValue = fireLevel,
+        animationSpec = tween(400),
+    )
+
+    val displayLevel = animatedFire.coerceIn(0f, 1f)
+
+    // Multiplier: ×1.0 at 0, ×6.0 at max
+    val multiplier = 1.0f + displayLevel * 5f
+    val multiplierText = "\u00D7${String.format("%.1f", multiplier)}"
+
+    // Pulse animation when hot
+    val infiniteTransition = rememberInfiniteTransition()
+    val pulse by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+    )
+
+    val barHeight = 32.dp
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(barHeight)
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)),
+    ) {
+        // Fiery gradient fill
+        if (displayLevel > 0f) {
+            val glowAlpha = if (displayLevel > 0.5f) (displayLevel - 0.5f) * 0.3f * (0.7f + 0.3f * pulse) else 0f
+
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth(displayLevel)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(16.dp)),
+            ) {
+                // Main gradient: dark red → orange → yellow at the leading edge
+                val gradient = Brush.horizontalGradient(
+                    colors = when {
+                        displayLevel > 0.7f -> listOf(
+                            Color(0xFFB71C1C), // dark red
+                            Color(0xFFE65100), // deep orange
+                            Color(0xFFFF9800), // orange
+                            Color(0xFFFFD600), // yellow hot tip
+                        )
+                        displayLevel > 0.3f -> listOf(
+                            Color(0xFFBF360C), // brown-red
+                            Color(0xFFE65100), // deep orange
+                            Color(0xFFFF9800), // orange
+                        )
+                        else -> listOf(
+                            Color(0xFF4E342E), // dark brown ember
+                            Color(0xFFBF360C), // brown-red
+                            Color(0xFFE65100), // deep orange
+                        )
+                    },
+                )
+                drawRect(gradient)
+
+                // Hot glow at the leading edge
+                if (displayLevel > 0.15f) {
+                    val edgeGlow = Brush.horizontalGradient(
+                        colors = listOf(Color.Transparent, Color(0xFFFFAB00).copy(alpha = 0.4f + glowAlpha)),
+                        startX = size.width * 0.6f,
+                        endX = size.width,
+                    )
+                    drawRect(edgeGlow)
+                }
+
+                // Bright core stripe through the center
+                val coreGlow = Brush.verticalGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        Color.White.copy(alpha = 0.08f + glowAlpha * 0.5f),
+                        Color.Transparent,
+                    ),
+                )
+                drawRect(coreGlow)
+            }
+        }
+
+        // Score + multiplier text
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Score with fire emoji when hot
+            val scorePrefix = when {
+                displayLevel > 0.7f -> "\uD83D\uDD25 "
+                displayLevel > 0.4f -> "\uD83D\uDD25 "
+                else -> ""
+            }
+            Text(
+                text = "$scorePrefix$points",
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.5.sp,
+                ),
+                color = Color.White,
+            )
+
+            // Multiplier badge
+            if (displayLevel > 0.03f) {
+                val multColor = when {
+                    displayLevel > 0.7f -> Color(0xFFFFD600)
+                    displayLevel > 0.4f -> Color(0xFFFFAB00)
+                    else -> Color.White.copy(alpha = 0.8f)
+                }
+                Text(
+                    text = multiplierText,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = FontWeight.Black,
+                    ),
+                    color = multColor,
+                )
+            }
         }
     }
 }

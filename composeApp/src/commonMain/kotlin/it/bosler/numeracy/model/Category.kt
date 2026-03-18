@@ -31,6 +31,11 @@ enum class Category(
         displayName = "Math Tricks",
         description = "Impress your friends",
         gradientColors = 0xFF4A148CL to 0xFFAB47BCL,
+    ),
+    GENERAL_MATH(
+        displayName = "General Math",
+        description = "Multiply, square & more",
+        gradientColors = 0xFF1A237EL to 0xFF5C6BC0L,
     );
 
     val startColor: Color get() = Color(gradientColors.first)

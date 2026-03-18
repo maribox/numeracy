@@ -32,6 +32,20 @@ data class PracticeState(
     val hideScore: Boolean = false,
     val answerHistory: List<Boolean> = emptyList(),
     val modeToastCounter: Int = 0,
+    // Game mode
+    val gameMode: Boolean = false,
+    val points: Int = 0,
+    val lastAnswerTimeMillis: Long = 0L,
+    val lastPointsEarned: Int = 0,
+    val confettiTrigger: Int = 0,
+    val flameTrigger: Int = 0,
+    val correctFlashTrigger: Int = 0,
+    val wrongFlashTrigger: Int = 0,
+    val shockwaveTrigger: Int = 0,
+    val comboTrigger: Int = 0,
+    // Fire bar: 0.0 = cold, 1.0 = max heat. Decays over time, grows on correct answers.
+    val fireLevel: Float = 0f,
+    val fireBoostTrigger: Int = 0,
 )
 
 data class Feedback(
@@ -47,8 +61,9 @@ class PracticeViewModel(
 ) : ViewModel() {
 
     private var difficulty: Difficulty = initialDifficulty
+    private val gameMode = AppContext.runRepository.isGameModeEnabled()
 
-    private val generator = generatorFor(scenarioType)
+    private var generator = generatorFor(scenarioType, difficulty)
     private val startedAt = currentTimeMillis()
     private val answerRecords = mutableListOf<AnswerRecord>()
 
@@ -57,9 +72,34 @@ class PracticeViewModel(
             currentProblem = generator.generate(),
             questionStartMillis = currentTimeMillis(),
             difficulty = difficulty,
+            gameMode = gameMode,
         )
     )
     val state: StateFlow<PracticeState> = _state.asStateFlow()
+
+    init {
+        // Continuous fire decay — exponential: fast at top, slow near bottom
+        // Reaches near-zero in ~15 seconds from full
+        if (gameMode) {
+            viewModelScope.launch {
+                while (true) {
+                    delay(200)
+                    val current = _state.value
+                    if (current.fireLevel > 0.01f && current.feedback == null) {
+                        // Inverse-quadratic decay: rate = k·f² + c
+                        // At f=1.0: ~5% per tick (fast). At f=0.1: ~0.3% per tick (crawl).
+                        // Reaches near-zero in ~20 seconds from full.
+                        val decay = current.fireLevel * current.fireLevel * 0.05f + 0.003f
+                        _state.value = current.copy(
+                            fireLevel = (current.fireLevel - decay).coerceAtLeast(0f).let {
+                                if (it < 0.01f) 0f else it
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     fun onAnswerChanged(answer: String) {
         val current = _state.value
@@ -99,6 +139,7 @@ class PracticeViewModel(
     fun changeDifficulty(newDifficulty: Difficulty) {
         if (newDifficulty == difficulty) return
         difficulty = newDifficulty
+        generator = generatorFor(scenarioType, difficulty)
         _state.value = _state.value.copy(
             difficulty = newDifficulty,
             modeToastCounter = _state.value.modeToastCounter + 1,
@@ -131,27 +172,47 @@ class PracticeViewModel(
 
                 val shouldHideScore = difficulty == Difficulty.HARD && current.totalAnswered >= 0
 
-                _state.value = current.copy(
-                    userAnswer = answer,
-                    feedback = Feedback(
-                        isCorrect = true,
-                        isClose = isClose,
-                        correctAnswer = correctAnswer,
-                        explanation = current.currentProblem.explanation,
-                    ),
+                // Game mode: fire bar + points
+                val newFireLevel: Float
+                val earnedPoints: Int
+                if (gameMode) {
+                    // Fire grows on correct answers. Faster answers = bigger boost.
+                    val speedBoost = when {
+                        elapsed < 1500 -> 0.35f
+                        elapsed < 3000 -> 0.25f
+                        elapsed < 6000 -> 0.15f
+                        else -> 0.08f
+                    }
+                    newFireLevel = (current.fireLevel + speedBoost).coerceAtMost(1f)
+                    // Points scale with fire level: 50 at 0, up to 300 at max
+                    val multiplier = 1.0 + newFireLevel * 5.0
+                    earnedPoints = (50 * multiplier).toInt()
+                } else {
+                    newFireLevel = current.fireLevel
+                    earnedPoints = 0
+                }
+
+                val shouldConfetti = gameMode && (newStreak % 5 == 0 && newStreak > 0)
+                val shouldCombo = gameMode && newStreak >= 3
+
+                // Advance immediately — no delay
+                val now = currentTimeMillis()
+                _state.value = PracticeState(
+                    currentProblem = generator.generate(),
                     streak = newStreak,
                     bestStreak = newBest,
                     totalAnswered = current.totalAnswered + 1,
                     totalCorrect = current.totalCorrect + 1,
-                    showInfo = false,
+                    questionStartMillis = now,
+                    difficulty = difficulty,
                     hideScore = shouldHideScore,
                     answerHistory = current.answerHistory + true,
+                    gameMode = gameMode,
+                    points = current.points + earnedPoints,
+                    lastPointsEarned = earnedPoints,
+                    confettiTrigger = if (shouldConfetti) current.confettiTrigger + 1 else current.confettiTrigger,
+                    fireLevel = newFireLevel,
                 )
-
-                viewModelScope.launch {
-                    delay(if (isClose) 1200 else 600)
-                    onNext()
-                }
             }
 
             AnswerResult.WRONG -> {
@@ -167,21 +228,20 @@ class PracticeViewModel(
 
                 val newBest = maxOf(current.bestStreak, current.streak)
 
+                // Wrong answer: big fire penalty
+                val newFireLevel = (current.fireLevel - 0.3f).coerceAtLeast(0f)
+
                 _state.value = current.copy(
-                    userAnswer = answer,
+                    userAnswer = "",
                     shake = true,
                     streak = 0,
                     bestStreak = newBest,
                     totalAnswered = current.totalAnswered + 1,
                     hideScore = false,
                     answerHistory = current.answerHistory + false,
+                    wrongFlashTrigger = if (gameMode) current.wrongFlashTrigger + 1 else current.wrongFlashTrigger,
+                    fireLevel = newFireLevel,
                 )
-
-                viewModelScope.launch {
-                    delay(250)
-                    val s = _state.value
-                    _state.value = s.copy(userAnswer = "", shake = false)
-                }
             }
         }
     }
@@ -199,6 +259,9 @@ class PracticeViewModel(
             difficulty = difficulty,
             hideScore = current.hideScore,
             answerHistory = current.answerHistory,
+            gameMode = gameMode,
+            points = current.points,
+            fireLevel = current.fireLevel,
         )
     }
 

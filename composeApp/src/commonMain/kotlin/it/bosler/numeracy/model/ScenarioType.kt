@@ -118,6 +118,20 @@ enum class ScenarioType(
         description = "Find the weekday for any date",
         gradientColors = 0xFF4A148CL to 0xFFAB47BCL,
         availableDifficulties = listOf(Difficulty.NORMAL, Difficulty.PRACTICE, Difficulty.LEARNING),
+    ),
+    SQUARING(
+        category = Category.GENERAL_MATH,
+        displayName = "Squaring",
+        description = "Square any number",
+        gradientColors = 0xFF283593L to 0xFF5C6BC0L,
+        availableDifficulties = listOf(Difficulty.NORMAL, Difficulty.PRACTICE, Difficulty.LEARNING),
+    ),
+    MULTIPLICATION(
+        category = Category.GENERAL_MATH,
+        displayName = "Multiplication",
+        description = "Multiply two numbers",
+        gradientColors = 0xFF1A237EL to 0xFF3F51B5L,
+        availableDifficulties = listOf(Difficulty.NORMAL, Difficulty.PRACTICE, Difficulty.LEARNING),
     );
 
     val startColor: Color get() = Color(gradientColors.first)

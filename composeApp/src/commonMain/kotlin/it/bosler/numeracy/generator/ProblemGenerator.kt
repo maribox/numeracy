@@ -1,5 +1,6 @@
 package it.bosler.numeracy.generator
 
+import it.bosler.numeracy.model.Difficulty
 import it.bosler.numeracy.model.Problem
 import it.bosler.numeracy.model.ScenarioType
 
@@ -7,7 +8,7 @@ interface ProblemGenerator {
     fun generate(): Problem
 }
 
-fun generatorFor(scenarioType: ScenarioType): ProblemGenerator = when (scenarioType) {
+fun generatorFor(scenarioType: ScenarioType, difficulty: Difficulty = Difficulty.NORMAL): ProblemGenerator = when (scenarioType) {
     ScenarioType.DARTS -> DartsGenerator()
     ScenarioType.BLACKJACK -> BlackjackGenerator()
     ScenarioType.POT_ODDS -> PokerGenerator()
@@ -23,4 +24,6 @@ fun generatorFor(scenarioType: ScenarioType): ProblemGenerator = when (scenarioT
     ScenarioType.VOLUME_CONVERSION -> VolumeConversionGenerator()
     ScenarioType.SPEED_CONVERSION -> SpeedConversionGenerator()
     ScenarioType.DOOMSDAY -> DoomsdayGenerator()
+    ScenarioType.SQUARING -> SquaringGenerator()
+    ScenarioType.MULTIPLICATION -> MultiplicationGenerator()
 }

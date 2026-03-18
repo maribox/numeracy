@@ -23,5 +23,7 @@ fun QuestionDisplay(problem: Problem, difficulty: Difficulty = Difficulty.NORMAL
         ScenarioType.VOLUME_CONVERSION -> VolumeConversionQuestionDisplay(problem, difficulty)
         ScenarioType.SPEED_CONVERSION -> SpeedConversionQuestionDisplay(problem, difficulty)
         ScenarioType.DOOMSDAY -> DoomsdayQuestionDisplay(problem, difficulty)
+        ScenarioType.SQUARING -> MathQuestionDisplay(problem, difficulty)
+        ScenarioType.MULTIPLICATION -> MathQuestionDisplay(problem, difficulty)
     }
 }
