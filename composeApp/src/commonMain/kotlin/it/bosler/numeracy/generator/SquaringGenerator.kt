@@ -40,55 +40,46 @@ class SquaringGenerator : ProblemGenerator {
         )
     }
 
-    /**
-     * Builds all applicable tricks for squaring [n], sorted by priority (most relevant first).
-     *
-     * Priority guidelines:
-     * - 100: Exact pattern match (ends-in-5 rule — instant shortcut, no real math needed)
-     * - 80:  Very close to a special number (within 1-2 of a round ten, or near 50)
-     * - 60:  Moderately close / nice structure (near-50 for numbers further away, adjust from neighbor)
-     * - 40:  Always-applicable algebraic tricks ((a+b)², round & compensate)
-     * - 20:  Fallback tricks (from neighbor square — always works but requires knowing (n-1)²)
-     */
     private fun buildApplicableTricks(n: Int, answer: Long): List<MathTrick> {
         val tricks = mutableListOf<MathTrick>()
 
-        val tens = (n / 10) * 10     // e.g. 56 → 50
-        val ones = n % 10            // e.g. 56 → 6
+        val tens = (n / 10) * 10
+        val ones = n % 10
 
-        // === 1. Multiple of 10 — trivial shortcut ===
-        // e.g. 90² = 9² × 100 = 8100
+        // === 1. Multiple of 10 ===
+        // 90² = (9 × 10)² = 9² × 100
         if (ones == 0 && tens > 0) {
             val small = n / 10
             val smallSq = small * small
             tricks.add(
                 MathTrick(
                     name = "Factor out the zeros",
-                    hint = "$n is a multiple of 10 — square the small part, then append two zeros.",
+                    hint = "(k \u00D7 10)\u00B2 = k\u00B2 \u00D7 100",
                     steps = listOf(
-                        "Factor: $n = #a{$small} \u00D7 10",
-                        "Square #a{$small}: #a{$small}² = #a{$smallSq}",
-                        "Add two zeros: #a{$smallSq} \u00D7 100 = #r{$answer}",
+                        "Formula: (k \u00D7 10)\u00B2 = k\u00B2 \u00D7 100",
+                        "$n = #a{$small} \u00D7 10",
+                        "#a{$small}\u00B2 = #a{$smallSq}",
+                        "#a{$smallSq} \u00D7 100 = #r{$answer}",
                     ),
                     priority = 100,
                 )
             )
         }
 
-        // === 2. Ends in 5 — instant shortcut ===
-        // e.g. 65² → k=6, 6×7=42, append 25 → 4225
+        // === 2. Ends in 5 ===
+        // 65² → 6 × 7 = 42, append 25 → 4225
         if (ones == 5) {
             val k = n / 10
             val product = k * (k + 1)
             tricks.add(
                 MathTrick(
                     name = "Ends-in-5 shortcut",
-                    hint = "For numbers ending in 5: multiply the tens digit by the next integer, then append 25.",
+                    hint = "n5\u00B2 = n \u00D7 (n + 1), then append 25",
                     steps = listOf(
-                        "Tens digit: #a{$k}",
-                        "Next integer: #b{${k + 1}}",
-                        "Multiply: #a{$k} \u00D7 #b{${k + 1}} = #c{$product}",
-                        "Append 25: #c{$product} \u2192 #r{${product}25}",
+                        "Formula: n5\u00B2 = n \u00D7 (n + 1) | 25",
+                        "Tens digit n = #a{$k}",
+                        "#a{$k} \u00D7 #b{${k + 1}} = #c{$product}",
+                        "Append 25: #c{$product}|25 = #r{${product}25}",
                     ),
                     priority = 100,
                 )
@@ -96,11 +87,11 @@ class SquaringGenerator : ProblemGenerator {
         }
 
         // === 3. Round to nearest ten ===
-        // e.g. 59² → 59 is 1 from 60, 60×58=3480, +1²=1, =3481
+        // 33² = (33-3)(33+3) + 3² = 30×36 + 9
         if (ones != 0) {
-            val d = if (ones <= 5) ones else 10 - ones  // distance to nearest ten
-            val r = if (ones <= 5) n - ones else n + (10 - ones) // nearest ten
-            val partner = 2 * n - r  // the other number equally spaced from n
+            val d = if (ones <= 5) ones else 10 - ones
+            val r = if (ones <= 5) n - ones else n + (10 - ones)
+            val partner = 2 * n - r
             val diffProduct = r.toLong() * partner.toLong()
             val dSquared = d.toLong() * d.toLong()
             val roundPriority = when (d) {
@@ -109,13 +100,14 @@ class SquaringGenerator : ProblemGenerator {
             tricks.add(
                 MathTrick(
                     name = "Round to nearest ten",
-                    hint = "$n is only $d away from $r — multiply the two equidistant numbers, then add $d².",
+                    hint = "n\u00B2 = (n \u2212 d)(n + d) + d\u00B2",
                     steps = listOf(
-                        "Nearest ten: $n is #b{$d} away from #a{$r}",
-                        "Equal spacing: #a{$r} and #a{$partner} (both #b{$d} from $n)",
-                        "Multiply: #a{$r} \u00D7 #a{$partner} = #c{$diffProduct}",
-                        "Add #b{$d}²: #b{$d}² = #b{$dSquared}",
-                        "Result: #c{$diffProduct} + #b{$dSquared} = #r{$answer}",
+                        "Formula: n\u00B2 = (n \u2212 d)(n + d) + d\u00B2",
+                        "$n is #b{$d} away from #a{$r}",
+                        "So $n\u00B2 = #a{$r} \u00D7 #a{$partner} + #b{$d}\u00B2",
+                        "#a{$r} \u00D7 #a{$partner} = #c{$diffProduct}",
+                        "#b{$d}\u00B2 = #b{$dSquared}",
+                        "#c{$diffProduct} + #b{$dSquared} = #r{$answer}",
                     ),
                     priority = roundPriority,
                 )
@@ -123,14 +115,13 @@ class SquaringGenerator : ProblemGenerator {
         }
 
         // === 4. Adjust from a known square ===
-        // e.g. 51² = 50² + (51−50)(51+50) = 2500 + 101 = 2601
-        // Works best when n is 1-3 away from a "landmark" (multiples of 10, or 25, 50, 75, 100)
+        // 51² = 50² + (51-50)(51+50) = 2500 + 101
         val landmarks = listOf(10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90, 100)
         for (m in landmarks) {
             val dist = kotlin.math.abs(n - m)
             if (dist in 1..3 && m != n) {
                 val mSq = m.toLong() * m.toLong()
-                val diff = n - m  // signed
+                val diff = n - m
                 val adjustment = diff.toLong() * (n.toLong() + m.toLong())
                 val absDiff = kotlin.math.abs(diff)
                 val absAdj = kotlin.math.abs(adjustment)
@@ -138,23 +129,24 @@ class SquaringGenerator : ProblemGenerator {
                 val priority = when (dist) { 1 -> 75; 2 -> 65; else -> 55 }
                 tricks.add(
                     MathTrick(
-                        name = "Adjust from $m²",
-                        hint = "$n is close to $m, whose square ($mSq) you know. Adjust using the gap.",
+                        name = "Adjust from $m\u00B2",
+                        hint = "n\u00B2 = m\u00B2 + (n \u2212 m)(n + m)",
                         steps = listOf(
-                            "Known square: #a{$m}² = #a{$mSq}",
-                            "Gap: $n \u2212 $m = $diff, and $n + $m = ${n + m}",
-                            "Adjustment: $absDiff \u00D7 ${n + m} = #b{$absAdj}",
-                            "Result: #a{$mSq} $sign #b{$absAdj} = #r{$answer}",
+                            "Formula: n\u00B2 = m\u00B2 + (n \u2212 m)(n + m)",
+                            "You know #a{$m}\u00B2 = #a{$mSq}",
+                            "$n \u2212 $m = $diff, and $n + $m = ${n + m}",
+                            "$absDiff \u00D7 ${n + m} = #b{$absAdj}",
+                            "#a{$mSq} $sign #b{$absAdj} = #r{$answer}",
                         ),
                         priority = priority,
                     )
                 )
-                break  // only use the closest landmark
+                break
             }
         }
 
         // === 5. Near-50 trick ===
-        // e.g. 53² = (53−25)×100 + 3² = 2800 + 9 = 2809
+        // 53² = (53-25)×100 + 3² = 2800 + 9
         if (n in 30..70 && ones != 0) {
             val absD = kotlin.math.abs(50 - n)
             val hundreds = (n - 25) * 100
@@ -163,17 +155,16 @@ class SquaringGenerator : ProblemGenerator {
                 val near50Priority = when {
                     absD <= 5 -> 80; absD <= 10 -> 60; else -> 50
                 }
-                val direction = if (n >= 50) "above" else "below"
                 tricks.add(
                     MathTrick(
                         name = "Near-50 trick",
-                        hint = "$n is $absD $direction 50. Subtract 25, multiply by 100, then add the distance squared.",
+                        hint = "n\u00B2 = (n \u2212 25) \u00D7 100 + (n \u2212 50)\u00B2",
                         steps = listOf(
-                            "Distance from 50: #b{$absD}",
+                            "Formula: n\u00B2 = (n \u2212 25) \u00D7 100 + (n \u2212 50)\u00B2",
                             "$n \u2212 25 = ${n - 25}",
-                            "Hundreds: ${n - 25} \u00D7 100 = #a{$hundreds}",
-                            "Tail: #b{$absD}² = #b{$tail}",
-                            "Combine: #a{$hundreds} + #b{$tail} = #r{$answer}",
+                            "${n - 25} \u00D7 100 = #a{$hundreds}",
+                            "$n is #b{$absD} from 50, so #b{$absD}\u00B2 = #b{$tail}",
+                            "#a{$hundreds} + #b{$tail} = #r{$answer}",
                         ),
                         priority = near50Priority,
                     )
@@ -181,9 +172,8 @@ class SquaringGenerator : ProblemGenerator {
             }
         }
 
-        // === 6. Split into tens + ones (a+b)² ===
-        // e.g. 16² = (10+6)² = 100 + 120 + 36 = 256
-        // Only when ones > 0 (otherwise it's just "factor out zeros")
+        // === 6. Split into tens + ones ===
+        // 16² = (10+6)² = 100 + 120 + 36 = 256
         if (ones in 1..9) {
             val aSq = tens.toLong() * tens.toLong()
             val twoAB = 2L * tens.toLong() * ones.toLong()
@@ -191,12 +181,13 @@ class SquaringGenerator : ProblemGenerator {
             tricks.add(
                 MathTrick(
                     name = "Split into tens + ones",
-                    hint = "Expand ($tens + $ones)² using the identity a² + 2ab + b².",
+                    hint = "(a + b)\u00B2 = a\u00B2 + 2ab + b\u00B2",
                     steps = listOf(
-                        "Split: $n = #a{$tens} + #b{$ones}",
-                        "#a{$tens}² = #a{$aSq}",
+                        "Formula: (a + b)\u00B2 = a\u00B2 + 2ab + b\u00B2",
+                        "$n = #a{$tens} + #b{$ones}",
+                        "#a{$tens}\u00B2 = #a{$aSq}",
                         "2 \u00D7 #a{$tens} \u00D7 #b{$ones} = #c{$twoAB}",
-                        "#b{$ones}² = #b{$bSq}",
+                        "#b{$ones}\u00B2 = #b{$bSq}",
                         "#a{$aSq} + #c{$twoAB} + #b{$bSq} = #r{$answer}",
                     ),
                     priority = 40,
@@ -204,19 +195,20 @@ class SquaringGenerator : ProblemGenerator {
             )
         }
 
-        // === 7. From neighbor square — fallback ===
-        // e.g. 16² = 15² + 2×16 − 1 = 225 + 31 = 256
+        // === 7. From neighbor square ===
+        // 16² = 15² + 2×16 − 1 = 225 + 31 = 256
         if (ones != 0) {
             val prev = n - 1
             val prevSq = prev.toLong() * prev.toLong()
             val step = 2L * n - 1
             tricks.add(
                 MathTrick(
-                    name = "From ${prev}²",
-                    hint = "Build on ${prev}² = $prevSq by adding 2 \u00D7 $n \u2212 1.",
+                    name = "From ${prev}\u00B2",
+                    hint = "n\u00B2 = (n \u2212 1)\u00B2 + 2n \u2212 1",
                     steps = listOf(
-                        "Previous square: #a{$prev}² = #a{$prevSq}",
-                        "Step: 2 \u00D7 $n \u2212 1 = #b{$step}",
+                        "Formula: n\u00B2 = (n \u2212 1)\u00B2 + 2n \u2212 1",
+                        "#a{$prev}\u00B2 = #a{$prevSq}",
+                        "2 \u00D7 $n \u2212 1 = #b{$step}",
                         "#a{$prevSq} + #b{$step} = #r{$answer}",
                     ),
                     priority = 20,
@@ -228,19 +220,6 @@ class SquaringGenerator : ProblemGenerator {
     }
 }
 
-/**
- * A mental math trick with its explanation and step-by-step breakdown.
- *
- * [priority] controls display order: higher = shown first. Tricks that are most specific
- * to the current numbers get the highest priority so the user sees the most useful trick
- * immediately. For example:
- * - Ends-in-5 rule gets top priority when n ends in 5 (it's the fastest shortcut)
- * - ×11/×25/×50 shortcuts get top priority when those exact factors appear
- * - Near-100 / near-50 rules rank high when both numbers are in that range
- * - Round & compensate ranks higher the closer a number is to a round ten
- * - General-purpose tricks (distributive, (a+b)² expansion) get lower priority
- *   since they always apply but aren't as insightful
- */
 internal data class MathTrick(
     val name: String,
     val hint: String,
