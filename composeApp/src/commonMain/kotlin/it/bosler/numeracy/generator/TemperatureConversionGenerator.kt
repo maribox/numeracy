@@ -6,7 +6,7 @@ import it.bosler.numeracy.model.ScenarioType
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
-class TemperatureConversionGenerator : ProblemGenerator {
+class TemperatureConversionGenerator(private val rng: Random = Random.Default) : ProblemGenerator {
 
     // Landmark pairs for practice mode reference
     private val landmarks = listOf(
@@ -15,10 +15,10 @@ class TemperatureConversionGenerator : ProblemGenerator {
     )
 
     override fun generate(): Problem {
-        val toFahrenheit = Random.nextBoolean()
+        val toFahrenheit = rng.nextBoolean()
 
         return if (toFahrenheit) {
-            val celsius = Random.nextInt(-20, 46)
+            val celsius = rng.nextInt(-20, 46)
             val fahrenheit = (celsius * 9.0 / 5.0 + 32).roundToInt()
             val nearest = landmarks.minBy { kotlin.math.abs(it.first - celsius) }
 
@@ -47,7 +47,7 @@ class TemperatureConversionGenerator : ProblemGenerator {
                 ),
             )
         } else {
-            val fahrenheit = Random.nextInt(0, 115)
+            val fahrenheit = rng.nextInt(0, 115)
             val celsius = ((fahrenheit - 32) * 5.0 / 9.0).roundToInt()
             val nearest = landmarks.minBy { kotlin.math.abs(it.second - fahrenheit) }
 

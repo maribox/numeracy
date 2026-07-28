@@ -3,27 +3,34 @@ package it.bosler.numeracy.generator
 import it.bosler.numeracy.model.Difficulty
 import it.bosler.numeracy.model.Problem
 import it.bosler.numeracy.model.ScenarioType
+import kotlin.random.Random
 
 interface ProblemGenerator {
     fun generate(): Problem
 }
 
-fun generatorFor(scenarioType: ScenarioType, difficulty: Difficulty = Difficulty.NORMAL): ProblemGenerator = when (scenarioType) {
-    ScenarioType.DARTS -> DartsGenerator()
-    ScenarioType.BLACKJACK -> BlackjackGenerator()
-    ScenarioType.POT_ODDS -> PokerGenerator()
-    ScenarioType.OUTS_COUNTING -> OutsCountingGenerator()
-    ScenarioType.EQUITY -> EquityGenerator()
-    ScenarioType.IMPLIED_ODDS -> ImpliedOddsGenerator()
-    ScenarioType.MAKING_CHANGE -> MakingChangeGenerator()
-    ScenarioType.CURRENCY_EXCHANGE -> CurrencyExchangeGenerator()
-    ScenarioType.TIME_ZONES -> TimeZonesGenerator()
-    ScenarioType.LENGTH_CONVERSION -> LengthConversionGenerator()
-    ScenarioType.WEIGHT_CONVERSION -> WeightConversionGenerator()
-    ScenarioType.TEMPERATURE_CONVERSION -> TemperatureConversionGenerator()
-    ScenarioType.VOLUME_CONVERSION -> VolumeConversionGenerator()
-    ScenarioType.SPEED_CONVERSION -> SpeedConversionGenerator()
-    ScenarioType.DOOMSDAY -> DoomsdayGenerator()
-    ScenarioType.SQUARING -> SquaringGenerator()
-    ScenarioType.MULTIPLICATION -> MultiplicationGenerator()
+/**
+ * The generator for a scenario. [rng] is the source of every question it makes; a seeded one
+ * gives the same run of questions twice, which is what draws a screen the same way twice.
+ */
+fun generatorFor(
+    scenarioType: ScenarioType,
+    difficulty: Difficulty = Difficulty.NORMAL,
+    rng: Random = Random.Default,
+): ProblemGenerator = when (scenarioType) {
+    ScenarioType.DARTS -> DartsGenerator(rng)
+    ScenarioType.BLACKJACK -> BlackjackGenerator(rng)
+    ScenarioType.POT_ODDS -> PokerGenerator(difficulty, rng)
+    ScenarioType.DRAW_EQUITY -> DrawEquityGenerator(difficulty, rng)
+    ScenarioType.MAKING_CHANGE -> MakingChangeGenerator(rng)
+    ScenarioType.CURRENCY_EXCHANGE -> CurrencyExchangeGenerator(rng)
+    ScenarioType.TIME_ZONES -> TimeZonesGenerator(rng)
+    ScenarioType.LENGTH_CONVERSION -> LengthConversionGenerator(rng)
+    ScenarioType.WEIGHT_CONVERSION -> WeightConversionGenerator(rng)
+    ScenarioType.TEMPERATURE_CONVERSION -> TemperatureConversionGenerator(rng)
+    ScenarioType.VOLUME_CONVERSION -> VolumeConversionGenerator(rng)
+    ScenarioType.SPEED_CONVERSION -> SpeedConversionGenerator(rng)
+    ScenarioType.DOOMSDAY -> DoomsdayGenerator(rng)
+    ScenarioType.SQUARING -> SquaringGenerator(rng)
+    ScenarioType.MULTIPLICATION -> MultiplicationGenerator(rng)
 }

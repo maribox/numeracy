@@ -5,14 +5,14 @@ import it.bosler.numeracy.model.Problem
 import it.bosler.numeracy.model.ScenarioType
 import kotlin.random.Random
 
-class MultiplicationGenerator : ProblemGenerator {
+class MultiplicationGenerator(private val rng: Random = Random.Default) : ProblemGenerator {
     override fun generate(): Problem {
-        val a = Random.nextInt(10, 100)
-        val b = Random.nextInt(10, 100)
+        val a = rng.nextInt(10, 100)
+        val b = rng.nextInt(10, 100)
         val answer = a.toLong() * b.toLong()
 
         val tricks = buildApplicableTricks(a, b, answer)
-        val selectedTrick = tricks.random()
+        val selectedTrick = tricks.random(rng)
 
         return Problem(
             scenarioType = ScenarioType.MULTIPLICATION,

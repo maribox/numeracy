@@ -5,13 +5,13 @@ import it.bosler.numeracy.model.Problem
 import it.bosler.numeracy.model.ScenarioType
 import kotlin.random.Random
 
-class SquaringGenerator : ProblemGenerator {
+class SquaringGenerator(private val rng: Random = Random.Default) : ProblemGenerator {
     override fun generate(): Problem {
-        val number = Random.nextInt(10, 100)
+        val number = rng.nextInt(10, 100)
         val answer = number.toLong() * number.toLong()
 
         val tricks = buildApplicableTricks(number, answer)
-        val selectedTrick = tricks.random()
+        val selectedTrick = tricks.random(rng)
 
         return Problem(
             scenarioType = ScenarioType.SQUARING,

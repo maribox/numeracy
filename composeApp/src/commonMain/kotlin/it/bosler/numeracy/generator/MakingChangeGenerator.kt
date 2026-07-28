@@ -4,10 +4,10 @@ import it.bosler.numeracy.model.Problem
 import it.bosler.numeracy.model.ScenarioType
 import kotlin.random.Random
 
-class MakingChangeGenerator : ProblemGenerator {
+class MakingChangeGenerator(private val rng: Random = Random.Default) : ProblemGenerator {
 
     override fun generate(): Problem {
-        val billCents = Random.nextInt(320, 4800)
+        val billCents = rng.nextInt(320, 4800)
         // Round to nearest 5 cents
         val roundedCents = (billCents / 5) * 5
         val billAmount = roundedCents / 100.0

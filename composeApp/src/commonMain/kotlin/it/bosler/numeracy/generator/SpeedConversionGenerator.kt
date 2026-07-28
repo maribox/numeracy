@@ -6,13 +6,13 @@ import it.bosler.numeracy.model.ScenarioType
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
-class SpeedConversionGenerator : ProblemGenerator {
+class SpeedConversionGenerator(private val rng: Random = Random.Default) : ProblemGenerator {
 
     override fun generate(): Problem {
-        val toKmh = Random.nextBoolean()
+        val toKmh = rng.nextBoolean()
 
         return if (toKmh) {
-            val mph = listOf(5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 100, 110, 120).random()
+            val mph = listOf(5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 100, 110, 120).random(rng)
             val kmh = (mph * 1.609).roundToInt()
 
             Problem(
@@ -38,7 +38,7 @@ class SpeedConversionGenerator : ProblemGenerator {
                 ),
             )
         } else {
-            val kmh = listOf(10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 180, 200).random()
+            val kmh = listOf(10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 180, 200).random(rng)
             val mph = (kmh * 0.6214).roundToInt()
 
             Problem(

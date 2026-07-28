@@ -4,7 +4,7 @@ import it.bosler.numeracy.model.Problem
 import it.bosler.numeracy.model.ScenarioType
 import kotlin.random.Random
 
-class TimeZonesGenerator : ProblemGenerator {
+class TimeZonesGenerator(private val rng: Random = Random.Default) : ProblemGenerator {
 
     data class TimeZone(
         val name: String,
@@ -28,17 +28,17 @@ class TimeZonesGenerator : ProblemGenerator {
     )
 
     override fun generate(): Problem {
-        val from = timeZones[Random.nextInt(timeZones.size)]
-        var to = timeZones[Random.nextInt(timeZones.size)]
+        val from = timeZones[rng.nextInt(timeZones.size)]
+        var to = timeZones[rng.nextInt(timeZones.size)]
         while (to == from) {
-            to = timeZones[Random.nextInt(timeZones.size)]
+            to = timeZones[rng.nextInt(timeZones.size)]
         }
 
-        val isSummer = Random.nextBoolean()
+        val isSummer = rng.nextBoolean()
         val season = if (isSummer) "summer" else "winter"
 
-        val hour = Random.nextInt(6, 23)
-        val minute = listOf(0, 15, 30, 45)[Random.nextInt(4)]
+        val hour = rng.nextInt(6, 23)
+        val minute = listOf(0, 15, 30, 45)[rng.nextInt(4)]
 
         val fromOffset = if (isSummer) from.offsetSummer else from.offsetWinter
         val toOffset = if (isSummer) to.offsetSummer else to.offsetWinter

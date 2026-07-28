@@ -6,7 +6,7 @@ import it.bosler.numeracy.model.ScenarioType
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
-class WeightConversionGenerator : ProblemGenerator {
+class WeightConversionGenerator(private val rng: Random = Random.Default) : ProblemGenerator {
 
     private data class Conversion(
         val fromUnit: String,
@@ -50,8 +50,8 @@ class WeightConversionGenerator : ProblemGenerator {
     )
 
     override fun generate(): Problem {
-        val conv = conversions[Random.nextInt(conversions.size)]
-        val value = Random.nextInt(conv.range.first, conv.range.last + 1)
+        val conv = conversions[rng.nextInt(conversions.size)]
+        val value = rng.nextInt(conv.range.first, conv.range.last + 1)
         val exact = value * conv.factor
         val answer = exact.roundToInt()
 

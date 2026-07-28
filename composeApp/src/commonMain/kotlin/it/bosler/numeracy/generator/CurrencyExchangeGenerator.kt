@@ -5,7 +5,7 @@ import it.bosler.numeracy.model.ScenarioType
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
-class CurrencyExchangeGenerator : ProblemGenerator {
+class CurrencyExchangeGenerator(private val rng: Random = Random.Default) : ProblemGenerator {
 
     data class Currency(
         val code: String,
@@ -36,8 +36,8 @@ class CurrencyExchangeGenerator : ProblemGenerator {
     )
 
     override fun generate(): Problem {
-        val currency = currencies[Random.nextInt(currencies.size)]
-        val eurAmount = listOf(10, 20, 25, 50, 75, 100, 150, 200, 250, 500)[Random.nextInt(10)]
+        val currency = currencies[rng.nextInt(currencies.size)]
+        val eurAmount = listOf(10, 20, 25, 50, 75, 100, 150, 200, 250, 500)[rng.nextInt(10)]
 
         val converted = eurAmount * currency.rateToEur
         val answer = if (converted > 100) converted.roundToInt().toString()

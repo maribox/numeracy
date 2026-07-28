@@ -4,7 +4,7 @@ import it.bosler.numeracy.model.Problem
 import it.bosler.numeracy.model.ScenarioType
 import kotlin.random.Random
 
-class DartsGenerator : ProblemGenerator {
+class DartsGenerator(private val rng: Random = Random.Default) : ProblemGenerator {
 
     private var currentScore = 501
 
@@ -158,7 +158,7 @@ class DartsGenerator : ProblemGenerator {
     private fun randomThrow(): Pair<String, Int> {
         // Realistic pub darts distribution:
         // ~50% singles, ~20% doubles, ~8% triples, ~15% miss (still single low), ~5% bull area, ~2% miss board
-        val roll = Random.nextInt(100)
+        val roll = rng.nextInt(100)
         return when {
             // Bullseye (rare)
             roll < 2 -> "Bull" to 50
@@ -198,7 +198,7 @@ class DartsGenerator : ProblemGenerator {
             6 to 3, 10 to 3,
         )
         val total = weights.values.sum()
-        var pick = Random.nextInt(total)
+        var pick = rng.nextInt(total)
         for ((number, weight) in weights) {
             pick -= weight
             if (pick < 0) return number

@@ -4,7 +4,7 @@ import it.bosler.numeracy.model.Problem
 import it.bosler.numeracy.model.ScenarioType
 import kotlin.random.Random
 
-class DoomsdayGenerator : ProblemGenerator {
+class DoomsdayGenerator(private val rng: Random = Random.Default) : ProblemGenerator {
 
     private val dayNames = listOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
     private val monthNames = listOf(
@@ -13,10 +13,10 @@ class DoomsdayGenerator : ProblemGenerator {
     )
 
     override fun generate(): Problem {
-        val year = Random.nextInt(1900, 2100)
-        val month = Random.nextInt(1, 13)
+        val year = rng.nextInt(1900, 2100)
+        val month = rng.nextInt(1, 13)
         val maxDay = daysInMonth(month, year)
-        val day = Random.nextInt(1, maxDay + 1)
+        val day = rng.nextInt(1, maxDay + 1)
 
         val dayOfWeek = calculateDayOfWeek(year, month, day)
         val answer = dayNames[dayOfWeek]

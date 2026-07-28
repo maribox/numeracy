@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 data class PracticeState(
     val currentProblem: Problem,
@@ -58,12 +59,13 @@ data class Feedback(
 class PracticeViewModel(
     private val scenarioType: ScenarioType,
     initialDifficulty: Difficulty = Difficulty.NORMAL,
+    private val rng: Random = Random.Default,
 ) : ViewModel() {
 
     private var difficulty: Difficulty = initialDifficulty
     private val gameMode = AppContext.runRepository.isGameModeEnabled()
 
-    private var generator = generatorFor(scenarioType, difficulty)
+    private var generator = generatorFor(scenarioType, difficulty, rng)
     private val startedAt = currentTimeMillis()
     private val answerRecords = mutableListOf<AnswerRecord>()
 
@@ -78,18 +80,17 @@ class PracticeViewModel(
     val state: StateFlow<PracticeState> = _state.asStateFlow()
 
     init {
-        // Continuous fire decay — exponential: fast at top, slow near bottom
-        // Reaches near-zero in ~15 seconds from full
+        // Continuous fire decay — drains fully in ~2× the scenario's median answer time.
         if (gameMode) {
+            val ticks = scenarioType.expectedMedianTimeMs * 2f / 200f
+            val k = 3f / ticks  // approximate: ∫f²·k from 1→0 over ticks
+            val c = k * 0.06f
             viewModelScope.launch {
                 while (true) {
                     delay(200)
                     val current = _state.value
                     if (current.fireLevel > 0.01f && current.feedback == null) {
-                        // Inverse-quadratic decay: rate = k·f² + c
-                        // At f=1.0: ~5% per tick (fast). At f=0.1: ~0.3% per tick (crawl).
-                        // Reaches near-zero in ~20 seconds from full.
-                        val decay = current.fireLevel * current.fireLevel * 0.05f + 0.003f
+                        val decay = current.fireLevel * current.fireLevel * k + c
                         _state.value = current.copy(
                             fireLevel = (current.fireLevel - decay).coerceAtLeast(0f).let {
                                 if (it < 0.01f) 0f else it
@@ -139,7 +140,7 @@ class PracticeViewModel(
     fun changeDifficulty(newDifficulty: Difficulty) {
         if (newDifficulty == difficulty) return
         difficulty = newDifficulty
-        generator = generatorFor(scenarioType, difficulty)
+        generator = generatorFor(scenarioType, difficulty, rng)
         _state.value = _state.value.copy(
             difficulty = newDifficulty,
             modeToastCounter = _state.value.modeToastCounter + 1,
@@ -176,12 +177,13 @@ class PracticeViewModel(
                 val newFireLevel: Float
                 val earnedPoints: Int
                 if (gameMode) {
-                    // Fire grows on correct answers. Faster answers = bigger boost.
+                    // Fire grows on correct answers. Speed boost scales to scenario median time.
+                    val median = scenarioType.expectedMedianTimeMs
                     val speedBoost = when {
-                        elapsed < 1500 -> 0.35f
-                        elapsed < 3000 -> 0.25f
-                        elapsed < 6000 -> 0.15f
-                        else -> 0.08f
+                        elapsed < median * 0.3 -> 0.75f  // blazing fast
+                        elapsed < median * 0.6 -> 0.55f  // fast
+                        elapsed < median * 1.2 -> 0.35f  // around median
+                        else -> 0.18f                     // slow
                     }
                     newFireLevel = (current.fireLevel + speedBoost).coerceAtMost(1f)
                     // Points scale with fire level: 50 at 0, up to 300 at max
@@ -193,26 +195,47 @@ class PracticeViewModel(
                 }
 
                 val shouldConfetti = gameMode && (newStreak % 5 == 0 && newStreak > 0)
-                val shouldCombo = gameMode && newStreak >= 3
 
-                // Advance immediately — no delay
-                val now = currentTimeMillis()
-                _state.value = PracticeState(
-                    currentProblem = generator.generate(),
-                    streak = newStreak,
-                    bestStreak = newBest,
-                    totalAnswered = current.totalAnswered + 1,
-                    totalCorrect = current.totalCorrect + 1,
-                    questionStartMillis = now,
-                    difficulty = difficulty,
-                    hideScore = shouldHideScore,
-                    answerHistory = current.answerHistory + true,
-                    gameMode = gameMode,
-                    points = current.points + earnedPoints,
-                    lastPointsEarned = earnedPoints,
-                    confettiTrigger = if (shouldConfetti) current.confettiTrigger + 1 else current.confettiTrigger,
-                    fireLevel = newFireLevel,
-                )
+                val next = {
+                    PracticeState(
+                        currentProblem = generator.generate(),
+                        streak = newStreak,
+                        bestStreak = newBest,
+                        totalAnswered = current.totalAnswered + 1,
+                        totalCorrect = current.totalCorrect + 1,
+                        questionStartMillis = currentTimeMillis(),
+                        difficulty = difficulty,
+                        hideScore = shouldHideScore,
+                        answerHistory = current.answerHistory + true,
+                        gameMode = gameMode,
+                        points = current.points + earnedPoints,
+                        lastPointsEarned = earnedPoints,
+                        confettiTrigger = if (shouldConfetti) current.confettiTrigger + 1 else current.confettiTrigger,
+                        fireLevel = newFireLevel,
+                    )
+                }
+
+                if (isClose) {
+                    // An answer inside the scenario's tolerance counts, and the exact one is shown
+                    // before the next question arrives: accepted silently, an estimate reads as
+                    // having been exactly right.
+                    _state.value = current.copy(
+                        userAnswer = userAnswer,
+                        feedback = Feedback(
+                            isCorrect = true,
+                            isClose = true,
+                            correctAnswer = correctAnswer,
+                            explanation = current.currentProblem.explanation,
+                        ),
+                    )
+                    viewModelScope.launch {
+                        delay(CLOSE_ANSWER_PAUSE_MS)
+                        _state.value = next()
+                    }
+                } else {
+                    // Exact answers advance immediately, with nothing to read in between.
+                    _state.value = next()
+                }
             }
 
             AnswerResult.WRONG -> {
@@ -278,6 +301,11 @@ class PracticeViewModel(
     }
 
     private enum class AnswerResult { EXACT, CLOSE, WRONG }
+
+    private companion object {
+        /** Long enough to read the exact answer, short enough not to interrupt a run. */
+        const val CLOSE_ANSWER_PAUSE_MS = 1200L
+    }
 
     private fun checkAnswer(userAnswer: String, correctAnswer: String, tolerancePercent: Double): AnswerResult {
         if (userAnswer.equals(correctAnswer, ignoreCase = true)) return AnswerResult.EXACT

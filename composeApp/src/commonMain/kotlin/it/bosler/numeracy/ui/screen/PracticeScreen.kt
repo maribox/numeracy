@@ -87,8 +87,8 @@ import it.bosler.numeracy.viewmodel.PracticeViewModel
 fun PracticeScreen(
     scenarioType: ScenarioType,
     onBack: () -> Unit,
+    viewModel: PracticeViewModel = remember(scenarioType) { PracticeViewModel(scenarioType) },
 ) {
-    val viewModel = remember { PracticeViewModel(scenarioType) }
     val state by viewModel.state.collectAsState()
 
     var timeHours by remember { mutableStateOf(12) }

@@ -4,13 +4,13 @@ import it.bosler.numeracy.model.Problem
 import it.bosler.numeracy.model.ScenarioType
 import kotlin.random.Random
 
-class BlackjackGenerator : ProblemGenerator {
+class BlackjackGenerator(private val rng: Random = Random.Default) : ProblemGenerator {
 
     private val cardNames = listOf("2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A")
 
     override fun generate(): Problem {
-        val numCards = Random.nextInt(2, 6)
-        val cards = (1..numCards).map { cardNames[Random.nextInt(cardNames.size)] }
+        val numCards = rng.nextInt(2, 6)
+        val cards = (1..numCards).map { cardNames[rng.nextInt(cardNames.size)] }
         val bestTotal = calculateBestTotal(cards)
 
         val cardsDisplay = cards.joinToString(", ")
