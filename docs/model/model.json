@@ -1,0 +1,1580 @@
+{
+  "views": [
+    {
+      "uid": "VIEW-HOME",
+      "tag": "VIEW",
+      "title": "Home",
+      "statement": "Show what there is to practice: six categories, each a photograph and one line saying what it trains.",
+      "status": "Built",
+      "sources": [
+        "composeApp/src/commonMain/kotlin/it/bosler/numeracy/ui/screen/HomeScreen.kt",
+        "composeApp/src/commonMain/kotlin/it/bosler/numeracy/model/Category.kt"
+      ],
+      "relations": [],
+      "renders": [
+        {
+          "file": "home-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "home-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "home-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "home-wide-dark.png",
+          "label": "wide dark"
+        }
+      ],
+      "states": []
+    },
+    {
+      "uid": "VIEW-CATEGORY",
+      "tag": "VIEW",
+      "title": "Category",
+      "statement": "Everything one category holds, with how practice has gone on each scenario so far, and a folder card where a subject is asked in more than one way.",
+      "status": "Built",
+      "sources": [
+        "composeApp/src/commonMain/kotlin/it/bosler/numeracy/ui/screen/ScenariosScreen.kt",
+        "composeApp/src/commonMain/kotlin/it/bosler/numeracy/model/ScenarioType.kt"
+      ],
+      "relations": [
+        {
+          "to": "VIEW-HOME",
+          "role": "Reached from"
+        }
+      ],
+      "renders": [
+        {
+          "file": "category-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "category-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "category-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "category-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "VIEW-SUBCATEGORY",
+      "tag": "VIEW",
+      "title": "Subcategory",
+      "statement": "The scenarios of one folder inside a category, for a subject that is more than one question: Poker is draw equity and pot odds, not one thing called poker.",
+      "status": "Built",
+      "sources": [
+        "composeApp/src/commonMain/kotlin/it/bosler/numeracy/ui/screen/ScenariosScreen.kt"
+      ],
+      "relations": [
+        {
+          "to": "VIEW-CATEGORY",
+          "role": "Reached from"
+        }
+      ],
+      "renders": [
+        {
+          "file": "subcategory-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "subcategory-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "subcategory-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "subcategory-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "VIEW-PRACTICE",
+      "tag": "VIEW",
+      "title": "Practice",
+      "statement": "Ask a question, take an answer, ask the next one. A difficulty to be asked at, a keypad shaped to the answer, and in game mode a fire bar that pays for speed.",
+      "status": "Built",
+      "sources": [
+        "composeApp/src/commonMain/kotlin/it/bosler/numeracy/ui/screen/PracticeScreen.kt",
+        "composeApp/src/commonMain/kotlin/it/bosler/numeracy/viewmodel/PracticeViewModel.kt",
+        "composeApp/src/commonMain/kotlin/it/bosler/numeracy/ui/component/question/QuestionDisplay.kt"
+      ],
+      "relations": [
+        {
+          "to": "VIEW-CATEGORY",
+          "role": "Reached from"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-wide-dark.png",
+          "label": "wide dark"
+        }
+      ],
+      "notes": "Drawn on the desktop target, where a Back button belongs on the screen; on Android that row is the system gesture instead."
+    },
+    {
+      "uid": "VIEW-STATISTICS",
+      "tag": "VIEW",
+      "title": "Statistics",
+      "statement": "What practice on one scenario has come to: accuracy, best streak, average time, the badges earned and every run so far.",
+      "status": "Built",
+      "sources": [
+        "composeApp/src/commonMain/kotlin/it/bosler/numeracy/ui/screen/StatisticsScreen.kt",
+        "composeApp/src/commonMain/kotlin/it/bosler/numeracy/persistence/RunRepository.kt"
+      ],
+      "relations": [
+        {
+          "to": "VIEW-CATEGORY",
+          "role": "Reached from"
+        }
+      ],
+      "renders": [
+        {
+          "file": "statistics-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "statistics-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "statistics-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "statistics-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "VIEW-SETTINGS",
+      "tag": "VIEW",
+      "title": "Settings",
+      "statement": "The one switch the app has, which build is running, and how the app is meant to be used.",
+      "status": "Built",
+      "sources": [
+        "composeApp/src/commonMain/kotlin/it/bosler/numeracy/ui/screen/SettingsScreen.kt"
+      ],
+      "relations": [
+        {
+          "to": "VIEW-HOME",
+          "role": "Reached from"
+        }
+      ],
+      "renders": [
+        {
+          "file": "settings-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "settings-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "settings-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "settings-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    }
+  ],
+  "states": [
+    {
+      "uid": "STATE-CATEGORY-EMPTY",
+      "tag": "STATE",
+      "title": "Empty",
+      "statement": "Nothing practiced yet, so a scenario card is a name and a promise: no run count, no accuracy, and no chart button to statistics that would have nothing to show.",
+      "relations": [
+        {
+          "to": "VIEW-CATEGORY",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "category-empty-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "category-empty-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "category-empty-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "category-empty-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-CATEGORY-FLAT",
+      "tag": "STATE",
+      "title": "No folders",
+      "statement": "A category whose scenarios are all one family and sit in one list, with no folder card among them.",
+      "relations": [
+        {
+          "to": "VIEW-CATEGORY",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "category-conversions-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "category-conversions-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "category-conversions-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "category-conversions-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-SUBCATEGORY-EMPTY",
+      "tag": "STATE",
+      "title": "Empty",
+      "statement": "The folder before anything in it has been played.",
+      "relations": [
+        {
+          "to": "VIEW-SUBCATEGORY",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "subcategory-empty-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "subcategory-empty-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "subcategory-empty-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "subcategory-empty-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-STATISTICS-EMPTY",
+      "tag": "STATE",
+      "title": "Empty",
+      "statement": "A scenario never practiced says so in words rather than showing a ring at nought per cent and an empty history.",
+      "relations": [
+        {
+          "to": "VIEW-STATISTICS",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "statistics-empty-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "statistics-empty-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "statistics-empty-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "statistics-empty-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-STATISTICS-ONE-RUN",
+      "tag": "STATE",
+      "title": "One run",
+      "statement": "A single run: the badges start at the first one, and the history is one line.",
+      "relations": [
+        {
+          "to": "VIEW-STATISTICS",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "statistics-one-run-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "statistics-one-run-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "statistics-one-run-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "statistics-one-run-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-SETTINGS-EMPTY",
+      "tag": "STATE",
+      "title": "Empty",
+      "statement": "Nothing practiced and game mode switched off. Everything below the switch reads the same however much has been played.",
+      "relations": [
+        {
+          "to": "VIEW-SETTINGS",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "settings-empty-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "settings-empty-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "settings-empty-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "settings-empty-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-EMPTY",
+      "tag": "STATE",
+      "title": "Empty",
+      "statement": "The first question of a run: no answers behind it, so the progress bar is a bare track and the fire bar is cold.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-empty-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-empty-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-empty-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-empty-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-WRONG",
+      "tag": "STATE",
+      "title": "Wrong answer",
+      "statement": "A wrong answer. The question stays, what was typed is cleared, the answer turns red and shakes, the segment turns red and the fire bar loses a third of its height.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-wrong-answer-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-wrong-answer-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-wrong-answer-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-wrong-answer-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-STREAK",
+      "tag": "STATE",
+      "title": "Streak reward",
+      "statement": "Five right in a row, answered with confetti across the whole screen. Every other picture in this book is of a screen that is not celebrating.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-streak-reward-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-streak-reward-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-streak-reward-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-streak-reward-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-INFO",
+      "tag": "STATE",
+      "title": "Info sheet",
+      "statement": "The (i) replaces the question and the keypad with a written guide to the technique the scenario trains.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-info-sheet-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-info-sheet-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-info-sheet-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-info-sheet-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-NO-GAME",
+      "tag": "STATE",
+      "title": "Game mode off",
+      "statement": "The same run with the switch in settings off: no fire bar, no points, no confetti. What is left is the question and the keypad.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-game-mode-off-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-game-mode-off-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-game-mode-off-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-game-mode-off-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-HARD",
+      "tag": "STATE",
+      "title": "Hard",
+      "statement": "Hard, where the running score is hidden after the first right answer and has to be carried in the head.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-hard-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-hard-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-hard-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-hard-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-HELPERS",
+      "tag": "STATE",
+      "title": "Practice helpers",
+      "statement": "Practice, where the intermediate value a scenario turns on is shown as a badge so one step at a time can be worked.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-practice-helpers-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-practice-helpers-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-practice-helpers-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-practice-helpers-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-LEARNING",
+      "tag": "STATE",
+      "title": "Learning",
+      "statement": "Learning, where the whole calculation is drawn out column by column under the question.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-learning-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-learning-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-learning-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-learning-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-TYPING",
+      "tag": "STATE",
+      "title": "Half typed",
+      "statement": "An answer part typed. Nothing is submitted: a number answer goes in when it is as long as the right one, so this is what the screen looks like mid-thought.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-half-typed-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-half-typed-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-half-typed-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-half-typed-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-CLOSE",
+      "tag": "STATE",
+      "title": "Close answer",
+      "statement": "An answer inside the scenario's tolerance. It counts, the exact answer is shown beside it, and the next question waits a moment rather than arriving on top of it.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-close-answer-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-close-answer-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-close-answer-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-close-answer-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-BLACKJACK",
+      "tag": "STATE",
+      "title": "Blackjack",
+      "statement": "A hand of cards to total, drawn as cards rather than written as a sum.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-blackjack-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-blackjack-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-blackjack-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-blackjack-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-DRAW-EQUITY",
+      "tag": "STATE",
+      "title": "Draw equity",
+      "statement": "A board and a hand, and the rule of two and four applied to the outs it leaves.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-draw-equity-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-draw-equity-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-draw-equity-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-draw-equity-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-POT-ODDS",
+      "tag": "STATE",
+      "title": "Pot odds",
+      "statement": "A pot and a call, and what share of the pot the call would be.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-pot-odds-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-pot-odds-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-pot-odds-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-pot-odds-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-CHANGE",
+      "tag": "STATE",
+      "title": "Making change",
+      "statement": "A receipt and what was handed over, answered on a keypad that has a decimal point because the answer is money.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-making-change-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-making-change-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-making-change-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-making-change-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-CURRENCY",
+      "tag": "STATE",
+      "title": "Currency exchange",
+      "statement": "An amount and a rate between two currencies.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-currency-exchange-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-currency-exchange-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-currency-exchange-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-currency-exchange-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-TIME-ZONES",
+      "tag": "STATE",
+      "title": "Time zones",
+      "statement": "A time in one city asked for in another, answered on a clock rather than a keypad, and the only question in the app with a Submit button.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-time-zones-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-time-zones-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-time-zones-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-time-zones-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-DOOMSDAY",
+      "tag": "STATE",
+      "title": "Doomsday",
+      "statement": "A date to find the weekday of, answered by picking a day rather than typing a number.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-doomsday-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-doomsday-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-doomsday-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-doomsday-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-LENGTH",
+      "tag": "STATE",
+      "title": "Length",
+      "statement": "Miles, feet and inches against metres, on the display the four conversion scenarios share.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-length-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-length-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-length-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-length-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-WEIGHT",
+      "tag": "STATE",
+      "title": "Weight",
+      "statement": "Pounds and ounces against kilogrammes.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-weight-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-weight-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-weight-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-weight-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-TEMPERATURE",
+      "tag": "STATE",
+      "title": "Temperature",
+      "statement": "Fahrenheit against Celsius, the one conversion with an offset as well as a factor.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-temperature-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-temperature-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-temperature-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-temperature-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-VOLUME",
+      "tag": "STATE",
+      "title": "Volume",
+      "statement": "Gallons and cups against litres.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-volume-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-volume-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-volume-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-volume-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-SPEED",
+      "tag": "STATE",
+      "title": "Speed",
+      "statement": "Miles per hour against kilometres per hour.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-speed-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-speed-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-speed-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-speed-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-SQUARING",
+      "tag": "STATE",
+      "title": "Squaring",
+      "statement": "A number to square, with the trick that fits it named above the working.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-squaring-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-squaring-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-squaring-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-squaring-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    },
+    {
+      "uid": "STATE-PRACTICE-MULTIPLICATION",
+      "tag": "STATE",
+      "title": "Multiplication",
+      "statement": "Two numbers to multiply, on the same display squaring uses.",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "State of"
+        }
+      ],
+      "renders": [
+        {
+          "file": "practice-multiplication-phone-light.png",
+          "label": "phone light"
+        },
+        {
+          "file": "practice-multiplication-phone-dark.png",
+          "label": "phone dark"
+        },
+        {
+          "file": "practice-multiplication-wide-light.png",
+          "label": "wide light"
+        },
+        {
+          "file": "practice-multiplication-wide-dark.png",
+          "label": "wide dark"
+        }
+      ]
+    }
+  ],
+  "requirements": [
+    {
+      "uid": "REQ-HOME-CATEGORIES",
+      "tag": "REQUIREMENT",
+      "title": "Every category, with what it trains",
+      "statement": "Home lists all six categories, each with its name, one line on what it trains and a photograph, two to a row.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-KETTLE",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-HOME",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-HOME-SETTINGS",
+      "tag": "REQUIREMENT",
+      "title": "Settings is one tap from home",
+      "statement": "The gear beside the title is the only way into settings, and it is reachable from home alone.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-KETTLE",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-HOME",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-CATEGORY-PROGRESS",
+      "tag": "REQUIREMENT",
+      "title": "Say how a scenario has gone",
+      "statement": "A scenario that has been practiced carries its run count and its accuracy on the card, and a chart button into its statistics. One never practiced carries neither.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-FASTER",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-CATEGORY",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-CATEGORY-FOLDER",
+      "tag": "REQUIREMENT",
+      "title": "A subject with several questions is a folder",
+      "statement": "A category that holds a subcategory shows it as one folder card saying how many scenarios are inside, rather than flattening them into the list.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-TABLE",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-CATEGORY",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-SUBCATEGORY-LIST",
+      "tag": "REQUIREMENT",
+      "title": "The folder is the category screen again",
+      "statement": "A folder lists its scenarios the way a category lists its own, with the same cards and the same statistics buttons.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-TABLE",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-SUBCATEGORY",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-PRACTICE-INSTANT",
+      "tag": "REQUIREMENT",
+      "title": "A right answer moves straight on",
+      "statement": "An answer as long as the right one is submitted without a key being pressed, and a right one is followed by the next question with no confirmation in between.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-KETTLE",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-PRACTICE-WRONG",
+      "tag": "REQUIREMENT",
+      "title": "A wrong answer keeps the question",
+      "statement": "A wrong answer clears what was typed, shakes and reddens it, marks the segment red and leaves the same question standing to be answered again.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-OCHE",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-PRACTICE-DIFFICULTY",
+      "tag": "REQUIREMENT",
+      "title": "Difficulty changes what is shown, not the wording",
+      "statement": "Each scenario names the difficulties it can be asked at, and switching one adds or removes what the question shows: the score, the intermediate values, the whole worked column.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-TRICKS",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-PRACTICE-INPUT",
+      "tag": "REQUIREMENT",
+      "title": "The keypad fits the answer",
+      "statement": "A number answer gets a keypad, money gets the decimal point with it, a time gets a clock and a Submit, and a weekday gets the seven days.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-KETTLE",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-PRACTICE-KEYBOARD",
+      "tag": "REQUIREMENT",
+      "title": "A physical keyboard answers too",
+      "statement": "Digits, the decimal point, backspace and Enter type an answer on desktop without touching the keypad.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-KETTLE",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-PRACTICE-GAME",
+      "tag": "REQUIREMENT",
+      "title": "Speed is worth points",
+      "statement": "In game mode a right answer feeds the fire bar by how far under the scenario's median it came, the bar decays on its own, and it multiplies what a question pays between one and six times. A wrong answer costs a third of it.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-KETTLE",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-PRACTICE-INFO",
+      "tag": "REQUIREMENT",
+      "title": "The method is one tap away",
+      "statement": "The (i) replaces the question with the written technique for that scenario, and the question comes back when it is tapped again.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-TRICKS",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-PRACTICE-SAVE",
+      "tag": "REQUIREMENT",
+      "title": "Leaving saves the run",
+      "statement": "A run is written when practice is left, with every answer, what was typed and how long it took; a run with no answers is not written at all.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-FASTER",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-PRACTICE-CLOSE",
+      "tag": "REQUIREMENT",
+      "title": "An answer near enough counts, and says so",
+      "statement": "A scenario with a tolerance accepts an answer inside it and shows the exact one alongside, so an estimate is not marked wrong and not mistaken for exact either.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-TABLE",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-PRACTICE-LANDSCAPE",
+      "tag": "REQUIREMENT",
+      "title": "Wide puts the keypad beside the question",
+      "statement": "Given more width than height, the question takes the left and the answer and keypad the right, rather than the question scrolling above a keypad pinned to the bottom.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-KETTLE",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-STATS-EMPTY",
+      "tag": "REQUIREMENT",
+      "title": "Never practiced is said in words",
+      "statement": "A scenario with no runs says there are none rather than showing a ring at nought and an empty history.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-FASTER",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-STATISTICS",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-STATS-SHAPE",
+      "tag": "REQUIREMENT",
+      "title": "Accuracy, streak and speed at a glance",
+      "statement": "The top of the screen carries the accuracy ring, the best streak and the average time, and under them the totals.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-FASTER",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-STATISTICS",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-STATS-HISTORY",
+      "tag": "REQUIREMENT",
+      "title": "Every run is listed",
+      "statement": "Each run shows its score, a bar of which answers were right in order, its average time and its best streak.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-FASTER",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-STATISTICS",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-STATS-BADGES",
+      "tag": "REQUIREMENT",
+      "title": "Milestones are named",
+      "statement": "Runs, accuracy, streaks and speed earn badges, and the ones earned are shown.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-FASTER",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-STATISTICS",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-STATS-PLAY",
+      "tag": "REQUIREMENT",
+      "title": "Play is the way out",
+      "statement": "The button along the bottom starts practice on the scenario being looked at.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-KETTLE",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-STATISTICS",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-SETTINGS-GAMEMODE",
+      "tag": "REQUIREMENT",
+      "title": "Game mode is one switch",
+      "statement": "The switch turns the fire bar, the points and the confetti on and off, and takes effect on the next practice screen opened.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-KETTLE",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-SETTINGS",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-SETTINGS-BUILD",
+      "tag": "REQUIREMENT",
+      "title": "Say which build this is",
+      "statement": "Settings names the version, the build number, the commit and when it was built.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-FASTER",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-SETTINGS",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-SETTINGS-HELP",
+      "tag": "REQUIREMENT",
+      "title": "How the app is meant to be used",
+      "statement": "Settings explains the difficulties, the info sheets, the statistics, keyboard input and the wide layout.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-TRICKS",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-SETTINGS",
+          "role": "Lives in"
+        }
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "uid": "STORY-KETTLE",
+      "tag": "STORY",
+      "title": "A minute of arithmetic, without choosing",
+      "statement": "I want a minute of mental arithmetic while the kettle boils, and I want to be asked a question rather than to configure one.",
+      "status": "Served",
+      "relations": [
+        {
+          "to": "VIEW-HOME",
+          "role": "Served by"
+        },
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "Served by"
+        }
+      ]
+    },
+    {
+      "uid": "STORY-OCHE",
+      "tag": "STORY",
+      "title": "Stop counting on my fingers at the oche",
+      "statement": "I want to know what 501 minus a treble nineteen is before the next dart is thrown.",
+      "status": "Served",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "Served by"
+        }
+      ]
+    },
+    {
+      "uid": "STORY-FASTER",
+      "tag": "STORY",
+      "title": "Know whether I am actually getting faster",
+      "statement": "I want to see that my average time is falling and my accuracy holding, rather than feel that it is.",
+      "status": "Served",
+      "relations": [
+        {
+          "to": "VIEW-STATISTICS",
+          "role": "Served by"
+        }
+      ]
+    },
+    {
+      "uid": "STORY-TABLE",
+      "tag": "STORY",
+      "title": "Do the poker maths before the table notices",
+      "statement": "I want pot odds and draw equity in my head at the speed the hand is played, not afterwards.",
+      "status": "Served",
+      "relations": [
+        {
+          "to": "VIEW-SUBCATEGORY",
+          "role": "Served by"
+        },
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "Served by"
+        }
+      ]
+    },
+    {
+      "uid": "STORY-TRICKS",
+      "tag": "STORY",
+      "title": "Carry a trick rather than a procedure",
+      "statement": "I want to be shown the method that makes a class of sums easy, and then be drilled on it until it is mine.",
+      "status": "Served",
+      "relations": [
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "Served by"
+        }
+      ]
+    }
+  ]
+}

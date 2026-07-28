@@ -1,0 +1,18 @@
+{
+  "title": "Numeracy",
+  "subtitle": "the model",
+  "states": [
+    "Empty"
+  ],
+  "shapes": [
+    "phone",
+    "wide"
+  ],
+  "renders": {
+    "command": [
+      "./make-renders.sh"
+    ],
+    "dir": "../..",
+    "statement": "Draws every screen off-screen on the JVM from the composables the app runs, with a practice history written for the purpose and questions from the real generators under a fixed seed. No device, no emulator, no preview functions to keep in step. About nine minutes for the lot; naming one screen takes twenty seconds."
+  }
+}
