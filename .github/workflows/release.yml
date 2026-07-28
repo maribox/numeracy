@@ -37,17 +37,20 @@ jobs:
         if: steps.tag.outputs.new_tag
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.jks
 
-      - name: Build signed release APK
+      # The APK is what a person sideloads from the release page; the bundle is what Play takes.
+      - name: Build signed release APK and bundle
         if: steps.tag.outputs.new_tag
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew :composeApp:assembleRelease
+        run: ./gradlew :composeApp:assembleRelease :composeApp:bundleRelease
 
-      - name: Rename APK
+      - name: Name the artifacts after the tag
         if: steps.tag.outputs.new_tag
-        run: mv composeApp/build/outputs/apk/release/*.apk numeracy-${{ steps.tag.outputs.new_tag }}.apk
+        run: |
+          mv composeApp/build/outputs/apk/release/*.apk numeracy-${{ steps.tag.outputs.new_tag }}.apk
+          mv composeApp/build/outputs/bundle/release/*.aab numeracy-${{ steps.tag.outputs.new_tag }}.aab
 
       - name: Create GitHub Release
         if: steps.tag.outputs.new_tag
@@ -57,3 +60,12 @@ jobs:
           name: ${{ steps.tag.outputs.new_tag }}
           body: ${{ steps.tag.outputs.changelog }}
           files: numeracy-${{ steps.tag.outputs.new_tag }}.apk
+
+      # The bundle goes to Play rather than to the release page: it is signed with the upload key
+      # and is of no use to anyone sideloading.
+      - name: Keep the bundle for the Play upload
+        if: steps.tag.outputs.new_tag
+        uses: actions/upload-artifact@v4
+        with:
+          name: numeracy-${{ steps.tag.outputs.new_tag }}-bundle
+          path: numeracy-${{ steps.tag.outputs.new_tag }}.aab

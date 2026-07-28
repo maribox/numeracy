@@ -19,6 +19,31 @@ val gitCommitCountProvider = providers.exec { commandLine("git", "rev-list", "--
 val buildDateProvider = providers.exec { commandLine("date", "+%Y-%m-%d %H:%M:%S") }
     .standardOutput.asText.map { it.trim() }
 
+// The release key's passwords come from the environment and nowhere else: a default written here
+// would be the password of the key that signs the published app, sitting in a public repository.
+val keystoreFile = rootProject.file("release.jks")
+val signingSecrets = listOf("KEYSTORE_PASSWORD", "KEY_ALIAS", "KEY_PASSWORD")
+    .associateWith { System.getenv(it) }
+val canSignRelease = keystoreFile.exists() && signingSecrets.values.all { !it.isNullOrBlank() }
+
+// Building a release without them would quietly produce an APK signed with the debug key, which
+// installs over nothing and is refused by Play, so a release build stops instead.
+gradle.taskGraph.whenReady {
+    val releasing = allTasks.any { it.name == "assembleRelease" || it.name == "bundleRelease" }
+    if (releasing && !canSignRelease) {
+        val missing = signingSecrets.filterValues { it.isNullOrBlank() }.keys
+        throw GradleException(
+            if (!keystoreFile.exists()) "release.jks is missing, so this release cannot be signed."
+            else "release.jks is present but ${missing.joinToString(", ")} is not set."
+        )
+    }
+}
+
+// One version string for the store listing, the APK and the About screen, counted from the commits
+// on the branch: Play refuses an upload whose code is not higher than the last one.
+val appVersionCode = gitCommitCountProvider.get().toInt()
+val appVersionName = "1.0.$appVersionCode"
+
 val generateBuildConfig = tasks.register("generateBuildConfig") {
     val outputDir = layout.buildDirectory.dir("generated/buildconfig")
     val hash = gitHashProvider
@@ -39,7 +64,7 @@ val generateBuildConfig = tasks.register("generateBuildConfig") {
             "object BuildConfig {\n" +
             "    const val GIT_HASH = \"$h\"\n" +
             "    const val BUILD_NUMBER = \"$c\"\n" +
-            "    const val VERSION_NAME = \"0.$c\"\n" +
+            "    const val VERSION_NAME = \"1.0.$c\"\n" +
             "    const val BUILD_TIMESTAMP = \"$d\"\n" +
             "}\n"
         )
@@ -114,8 +139,11 @@ android {
         applicationId = "it.bosler.numeracy"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0"
+        // Play accepts an upload only when the code is higher than the last one, so it counts
+        // commits rather than being typed. The name is the same number, so the version in Settings
+        // and the version in the store are one string.
+        versionCode = appVersionCode
+        versionName = appVersionName
     }
     packaging {
         resources {
@@ -127,19 +155,18 @@ android {
             // Uses default debug keystore
         }
         create("release") {
-            val ksFile = rootProject.file("release.jks")
-            if (ksFile.exists()) {
-                storeFile = ksFile
-                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "numeracy123"
-                keyAlias = System.getenv("KEY_ALIAS") ?: "numeracy"
-                keyPassword = System.getenv("KEY_PASSWORD") ?: "numeracy123"
+            if (canSignRelease) {
+                storeFile = keystoreFile
+                storePassword = signingSecrets["KEYSTORE_PASSWORD"]
+                keyAlias = signingSecrets["KEY_ALIAS"]
+                keyPassword = signingSecrets["KEY_PASSWORD"]
             }
         }
     }
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
-            signingConfig = if (rootProject.file("release.jks").exists())
+            signingConfig = if (canSignRelease)
                 signingConfigs.getByName("release")
             else
                 signingConfigs.getByName("debug")
@@ -157,6 +184,39 @@ dependencies {
 
 tasks.matching { it.name.startsWith("compileKotlin") || it.name.startsWith("compile") && it.name.contains("Kotlin") }
     .configureEach { dependsOn("generateBuildConfig") }
+
+// Writes what the renderer needs on its class path, so make-renders.sh can start several JVMs at
+// once: Compose draws one screen at a time in a process, and there are a hundred and thirty of them.
+tasks.register("galleryClasspath") {
+    group = "numeracy"
+    description = "Write the renderer's class path to build/gallery-classpath.txt"
+    val jvmMain = kotlin.targets.getByName("jvm").compilations.getByName("main")
+    dependsOn(jvmMain.compileAllTaskName)
+    val output = layout.buildDirectory.file("gallery-classpath.txt")
+    val entries = jvmMain.output.allOutputs + configurations.getByName("jvmRuntimeClasspath")
+    outputs.file(output)
+    doLast { output.get().asFile.writeText(entries.asPath) }
+}
+
+// Draws every screen off-screen to build/gallery/*.png, which is what docs/model shows.
+tasks.register<JavaExec>("renderGallery") {
+    group = "numeracy"
+    description = "Render every view and state to build/gallery/*.png"
+    val jvmMain = kotlin.targets.getByName("jvm").compilations.getByName("main")
+    dependsOn(jvmMain.compileAllTaskName)
+    classpath = jvmMain.output.allOutputs + configurations.getByName("jvmRuntimeClasspath")
+    mainClass.set("it.bosler.numeracy.gallery.GalleryKt")
+    systemProperty("gallery.out", layout.buildDirectory.dir("gallery").get().asFile.absolutePath)
+    systemProperty("gallery.homes", layout.buildDirectory.dir("gallery-home").get().asFile.absolutePath)
+    // Draw one screen, or one shape, while iterating on it: -Ponly=practice -Pshapes=phone
+    (findProperty("only") as String?)?.let { systemProperty("gallery.only", it) }
+    (findProperty("shapes") as String?)?.let { systemProperty("gallery.shapes", it) }
+    (findProperty("themes") as String?)?.let { systemProperty("gallery.themes", it) }
+    (findProperty("frames") as String?)?.let { systemProperty("gallery.frames", it) }
+    (findProperty("phoneHeight") as String?)?.let { systemProperty("gallery.phoneHeight", it) }
+    systemProperty("java.awt.headless", "true")
+    systemProperty("skiko.renderApi", "SOFTWARE")
+}
 
 compose.desktop {
     application {

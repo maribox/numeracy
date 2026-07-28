@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1A237E"/>
+      <stop offset="100%" stop-color="#7B1FA2"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <g transform="translate(300 60) scale(0.72)">
+    <text x="0" y="345" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="280" fill="white" letter-spacing="-10">n</text>
+    <text x="140" y="225" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="160" fill="#FFD54F">2</text>
+  </g>
+  <text x="500" y="285" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="86" fill="white" letter-spacing="-2">Numeracy</text>
+</svg>
