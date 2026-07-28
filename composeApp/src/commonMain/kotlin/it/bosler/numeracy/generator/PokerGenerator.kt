@@ -1,18 +1,20 @@
 package it.bosler.numeracy.generator
 
-import it.bosler.numeracy.model.Card
+import it.bosler.numeracy.model.Difficulty
+import it.bosler.numeracy.model.InputType
 import it.bosler.numeracy.model.Problem
 import it.bosler.numeracy.model.ScenarioType
 import it.bosler.numeracy.model.fullDeck
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
-class PokerGenerator : ProblemGenerator {
+class PokerGenerator(
+    private val difficulty: Difficulty = Difficulty.NORMAL,
+    private val rng: Random = Random.Default,
+) : ProblemGenerator {
 
     override fun generate(): Problem {
-        val pot = Random.nextInt(4, 51) * 10 // 40 to 500
-        val callAmount = Random.nextInt(1, (pot / 10).coerceAtMost(10) + 1) * 10 // 10 to ~100
-
+        val (pot, callAmount) = generateNumbers()
         val totalPot = pot + callAmount
         val potOdds = (callAmount.toDouble() / totalPot * 100).roundToInt()
 
@@ -20,81 +22,64 @@ class PokerGenerator : ProblemGenerator {
         val simplNum = callAmount / gcd
         val simplDen = totalPot / gcd
 
-        // === LEARNING (hintEasy): Full walkthrough with technique ===
-        val hintEasy = buildString {
-            append("Pot odds = Call ÷ Total Pot \u00D7 100\n")
-            append("Total pot = \$$pot + \$$callAmount = \$$totalPot\n")
-            append("Fraction: $callAmount/$totalPot")
-            if (gcd > 1) {
-                append(" → ÷$gcd → $simplNum/$simplDen")
-            }
-            append("\n")
-            // Show the division technique
-            when {
-                simplDen == 2 -> append("$simplNum/$simplDen = 50%")
-                simplDen == 3 -> append("1/3 ≈ 33%. ${if (simplNum > 1) "$simplNum/3 = ${simplNum * 33}% (approx)" else ""}")
-                simplDen == 4 -> append("1/4 = 25%. ${if (simplNum > 1) "$simplNum/4 = ${simplNum * 25}%" else ""}")
-                simplDen == 5 -> append("1/5 = 20%. ${if (simplNum > 1) "$simplNum/5 = ${simplNum * 20}%" else ""}")
-                simplDen in listOf(6, 7, 8, 9, 10) -> {
-                    val pct = (simplNum.toDouble() / simplDen * 100).toInt()
-                    append("$simplNum ÷ $simplDen ≈ $pct%")
-                }
-                else -> append("$simplNum ÷ $simplDen ≈ $potOdds%")
-            }
-            append("\n→ $potOdds%")
-        }
-
-        // === PRACTICE (hintMedium): Technique guidance ===
-        val hintMedium = buildString {
-            append("Total pot = pot + call = \$$totalPot\n")
-            if (gcd > 1) {
-                append("Both divisible by $gcd → simplify to $simplNum/$simplDen\n")
-            }
-            // Teach fraction-to-percentage technique
-            append("Key fractions: 1/2=50%, 1/3≈33%, 1/4=25%, 1/5=20%, 1/6≈17%, 1/7≈14%\n")
-            append("Find the closest match, then adjust.")
-        }
-
-        val hintHard = ""
-
-        // Deal random cards for visual context
         val deck = fullDeck().shuffled()
         val hole = deck.take(2)
-        val boardSize = listOf(3, 4).random() // flop or turn
+        val boardSize = if (rng.nextBoolean()) 3 else 4
         val board = deck.drop(2).take(boardSize)
-        val holeStr = hole.joinToString(",") { it.display }
-        val boardStr = board.joinToString(",") { it.display }
         val street = if (boardSize == 3) "Flop" else "Turn"
+
+        // Win% shown for context on HARD and NORMAL (teaches call/fold decision)
+        val winPercent = (15..65).random(rng)
 
         return Problem(
             scenarioType = ScenarioType.POT_ODDS,
             questionText = "What are your pot odds? (%)",
             correctAnswer = potOdds.toString(),
-            explanation = "\$$callAmount / (\$$pot + \$$callAmount) × 100 = $potOdds%",
+            inputType = InputType.NUMBER,
+            explanation = "\$$callAmount \u00F7 (\$$pot + \$$callAmount) \u00D7 100 = $potOdds%",
+            tolerancePercent = if (difficulty == Difficulty.HARD) 2.0 else 0.0,
             metadata = mapOf(
                 "potAmount" to pot.toString(),
                 "callAmount" to callAmount.toString(),
                 "totalPot" to totalPot.toString(),
+                "potOdds" to potOdds.toString(),
+                "simplNum" to simplNum.toString(),
+                "simplDen" to simplDen.toString(),
                 "fraction" to "$simplNum/$simplDen",
-                "holeCards" to holeStr,
-                "boardCards" to boardStr,
+                "holeCards" to hole.joinToString(",") { it.display },
+                "boardCards" to board.joinToString(",") { it.display },
                 "street" to street,
-                "hintEasy" to hintEasy,
-                "hintMedium" to hintMedium,
-                "hintHard" to hintHard,
-                "tip" to buildTip(),
+                "winPercent" to winPercent.toString(),
             ),
         )
     }
 
-    private fun buildTip(): String =
-        "Poker Pot Odds:\n" +
-        "• Formula: call ÷ (pot + call) × 100 = pot odds %. If your hand equity > pot odds %, calling is +EV.\n" +
-        "• Round both numbers to the nearest easy figure first: \$23 → \$25, \$72 → \$75. Precision isn't needed.\n" +
-        "• Rule of 4 & 2: on the flop multiply outs × 4 for % to hit by river; on the turn multiply outs × 2.\n" +
-        "• Key draw equities to memorise: flush draw = 9 outs ≈ 36% (flop); open-ended straight = 8 outs ≈ 32%; gutshot = 4 outs ≈ 16%.\n" +
-        "• Half-pot bet = 33% pot odds. Pot-sized bet = 50% pot odds. These benchmarks cover most spots.\n" +
-        "• Simplify the fraction: find what both numbers divide by, e.g. 30/(90+30) = 30/120 = 1/4 = 25%."
+    private fun generateNumbers(): Pair<Int, Int> = when (difficulty) {
+        Difficulty.HARD -> {
+            // Non-round numbers — the fraction won't simplify to 1/n
+            val call = listOf(35, 45, 55, 65, 75, 85, 95, 115, 125, 135).random(rng)
+            val pot = listOf(70, 90, 110, 130, 150, 175, 195, 225, 250, 280, 320).random(rng)
+            pot to call
+        }
+        else -> {
+            // Clean numbers: call/totalPot = 1/n for easy mental math
+            val pairs = listOf(
+                50 to 150,   // 50/200 = 1/4 = 25%
+                60 to 120,   // 60/180 = 1/3 = 33%
+                50 to 100,   // 50/150 = 1/3 = 33%
+                40 to 120,   // 40/160 = 1/4 = 25%
+                50 to 200,   // 50/250 = 1/5 = 20%
+                40 to 80,    // 40/120 = 1/3 = 33%
+                60 to 180,   // 60/240 = 1/4 = 25%
+                80 to 160,   // 80/240 = 1/3 = 33%
+                50 to 250,   // 50/300 = 1/6 = 17%
+                100 to 100,  // 100/200 = 1/2 = 50%
+                60 to 240,   // 60/300 = 1/5 = 20%
+            )
+            val (call, pot) = pairs.random(rng)
+            pot to call
+        }
+    }
 
     private fun gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
 }

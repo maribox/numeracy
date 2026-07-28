@@ -19,311 +19,261 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import it.bosler.numeracy.model.Difficulty
 import it.bosler.numeracy.model.Problem
 
+// ─────────────────────────────────────────────────────────────────────────────
+// POT ODDS
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
- * Pot odds display -shows hole cards, board, pot and call amount.
+ * Difficulty progression:
+ * HARD     — cards shown (estimate win% yourself), ugly numbers, ±2% accepted
+ * NORMAL   — win% given, clean numbers
+ * PRACTICE — win% given + total pot badge
+ * LEARNING — win% given + total pot + simplified fraction + formula label
  */
 @Composable
 fun PokerQuestionDisplay(problem: Problem, difficulty: Difficulty = Difficulty.NORMAL) {
-    val potAmount = problem.metadata["potAmount"] ?: "0"
-    val callAmount = problem.metadata["callAmount"] ?: "0"
+    val pot = problem.metadata["potAmount"] ?: "0"
+    val call = problem.metadata["callAmount"] ?: "0"
+    val totalPot = problem.metadata["totalPot"] ?: "0"
+    val fraction = problem.metadata["fraction"] ?: ""
+    val winPercent = problem.metadata["winPercent"] ?: ""
     val holeCards = parseCardStrings(problem.metadata["holeCards"] ?: "")
     val boardCards = parseCardStrings(problem.metadata["boardCards"] ?: "")
     val street = problem.metadata["street"] ?: ""
-    val isPractice = difficulty == Difficulty.PRACTICE || difficulty == Difficulty.LEARNING
 
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Cards
-        if (holeCards.isNotEmpty()) {
-            LabeledCardRow(label = "Your hand", cards = holeCards)
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-        if (boardCards.isNotEmpty()) {
-            LabeledCardRow(label = if (street.isNotEmpty()) "$street" else "Board", cards = boardCards)
-            Spacer(modifier = Modifier.height(16.dp))
+        // HARD: show cards so player must estimate win% themselves
+        if (difficulty == Difficulty.HARD) {
+            if (holeCards.isNotEmpty()) {
+                LabeledCardRow(label = "Your hand", cards = holeCards)
+                Spacer(Modifier.height(10.dp))
+            }
+            if (boardCards.isNotEmpty()) {
+                LabeledCardRow(label = street, cards = boardCards)
+                Spacer(Modifier.height(14.dp))
+            }
         }
 
-        // Pot + Call chips
+        // Pot + call chips — always shown
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ChipBadge(label = "Pot", value = "$$potAmount", isPrimary = true)
-            Spacer(modifier = Modifier.width(12.dp))
-            ChipBadge(label = "To call", value = "$$callAmount", isPrimary = false)
+            PokerChip(label = "Pot", value = "\$$pot", isPrimary = true)
+            Spacer(Modifier.width(12.dp))
+            PokerChip(label = "To call", value = "\$$call", isPrimary = false)
         }
 
-        // Practice helpers
-        if (isPractice) {
-            val totalPot = problem.metadata["totalPot"] ?: "0"
-            val fraction = problem.metadata["fraction"] ?: ""
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+        // NORMAL/PRACTICE/LEARNING: win% is given (no cards needed)
+        if (difficulty != Difficulty.HARD) {
+            Spacer(Modifier.height(10.dp))
+            HelperBadge(
+                label = "Your win%",
+                value = "$winPercent%",
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                textColor = MaterialTheme.colorScheme.onTertiaryContainer,
                 modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        // PRACTICE+: show total pot
+        if (difficulty == Difficulty.PRACTICE || difficulty == Difficulty.LEARNING) {
+            Spacer(Modifier.height(8.dp))
+            HelperBadge(
+                label = "Total pot  (pot + call)",
+                value = "\$$totalPot",
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                textColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        // LEARNING: show simplified fraction + formula
+        if (difficulty == Difficulty.LEARNING) {
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 HelperBadge(
-                    label = "Total pot",
-                    value = "$$totalPot",
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    textColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.weight(1f),
-                )
-                HelperBadge(
-                    label = "Fraction",
+                    label = "Fraction  (call \u00F7 total)",
                     value = fraction,
                     color = MaterialTheme.colorScheme.primaryContainer,
                     textColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.weight(1f),
                 )
+                HelperBadge(
+                    label = "Formula",
+                    value = "fraction \u00D7 100 = ?%",
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    textColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }
 }
 
-/**
- * Outs counting display -shows hole cards, board, and draw name.
- */
-@Composable
-fun OutsCountingQuestionDisplay(problem: Problem, difficulty: Difficulty = Difficulty.NORMAL) {
-    val holeCards = parseCardStrings(problem.metadata["holeCards"] ?: "")
-    val boardCards = parseCardStrings(problem.metadata["boardCards"] ?: "")
-    val drawName = problem.metadata["drawName"] ?: ""
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        // Cards
-        if (holeCards.isNotEmpty()) {
-            LabeledCardRow(label = "Your hand", cards = holeCards)
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-        if (boardCards.isNotEmpty()) {
-            LabeledCardRow(label = "Board", cards = boardCards)
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        // Draw type badge
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f))
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        ) {
-            Text(
-                text = drawName,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "How many outs?",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// DRAW EQUITY
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Equity display -shows cards, draw info, and asks for equity %.
+ * Difficulty progression:
+ * HARD     — cards + street only. Know outs from memory, apply rule of 2/4.
+ * NORMAL   — adds draw name badge. Know outs, apply rule.
+ * PRACTICE — adds outs count. Just apply rule of 2/4.
+ * LEARNING — adds multiplier badge + pot odds context. Just multiply.
  */
 @Composable
-fun EquityQuestionDisplay(problem: Problem, difficulty: Difficulty = Difficulty.NORMAL) {
-    val holeCards = parseCardStrings(problem.metadata["holeCards"] ?: "")
-    val boardCards = parseCardStrings(problem.metadata["boardCards"] ?: "")
+fun DrawEquityQuestionDisplay(problem: Problem, difficulty: Difficulty = Difficulty.NORMAL) {
     val drawName = problem.metadata["drawName"] ?: ""
+    val drawExplanation = problem.metadata["drawExplanation"] ?: ""
     val outs = problem.metadata["outs"] ?: ""
-    val streetLabel = problem.metadata["streetLabel"] ?: ""
     val multiplier = problem.metadata["multiplier"] ?: ""
-    val isPractice = difficulty == Difficulty.PRACTICE || difficulty == Difficulty.LEARNING
+    val street = problem.metadata["street"] ?: ""
+    val potOdds = problem.metadata["potOdds"] ?: ""
+    val pot = problem.metadata["potAmount"] ?: "0"
+    val call = problem.metadata["callAmount"] ?: "0"
+    val holeCards = parseCardStrings(problem.metadata["holeCards"] ?: "")
+    val boardCards = parseCardStrings(problem.metadata["boardCards"] ?: "")
 
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Cards
-        if (holeCards.isNotEmpty()) {
-            LabeledCardRow(label = "Your hand", cards = holeCards)
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-        if (boardCards.isNotEmpty()) {
-            LabeledCardRow(label = streetLabel.ifEmpty { "Board" }, cards = boardCards)
-            Spacer(modifier = Modifier.height(16.dp))
+        if (difficulty == Difficulty.HARD) {
+            if (holeCards.isNotEmpty()) {
+                LabeledCardRow(label = "Your hand", cards = holeCards)
+                Spacer(Modifier.height(10.dp))
+            }
+            if (boardCards.isNotEmpty()) {
+                LabeledCardRow(label = street, cards = boardCards)
+                Spacer(Modifier.height(14.dp))
+            }
         }
 
-        // Draw info
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
+        // Street badge — always shown (tells you ×4 or ×2)
+        StreetBadge(street = street)
+
+        // NORMAL+: draw name
+        if (difficulty != Difficulty.HARD) {
+            Spacer(Modifier.height(8.dp))
             HelperBadge(
-                label = "Draw",
+                label = "Your draw",
                 value = drawName,
                 color = MaterialTheme.colorScheme.tertiaryContainer,
                 textColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                modifier = Modifier.weight(1f),
-            )
-            HelperBadge(
-                label = "Outs",
-                value = outs,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                textColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.weight(0.5f),
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Equity % (Rule of $multiplier)?",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        if (isPractice) {
-            Spacer(modifier = Modifier.height(8.dp))
-            HelperBadge(
-                label = "Hint",
-                value = "$outs × $multiplier = ?",
-                color = MaterialTheme.colorScheme.primaryContainer,
-                textColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-        }
-    }
-}
-
-/**
- * Implied odds display -shows cards, pot/call/equity, asks for needed winnings.
- */
-@Composable
-fun ImpliedOddsQuestionDisplay(problem: Problem, difficulty: Difficulty = Difficulty.NORMAL) {
-    val potAmount = problem.metadata["potAmount"] ?: "0"
-    val callAmount = problem.metadata["callAmount"] ?: "0"
-    val equity = problem.metadata["equity"] ?: "0"
-    val holeCards = parseCardStrings(problem.metadata["holeCards"] ?: "")
-    val boardCards = parseCardStrings(problem.metadata["boardCards"] ?: "")
-    val isPractice = difficulty == Difficulty.PRACTICE || difficulty == Difficulty.LEARNING
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        // Cards
-        if (holeCards.isNotEmpty()) {
-            LabeledCardRow(label = "Your hand", cards = holeCards)
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-        if (boardCards.isNotEmpty()) {
-            LabeledCardRow(label = "Flop", cards = boardCards)
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        // Info chips row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            HelperBadge(
-                label = "Pot",
-                value = "$$potAmount",
-                color = MaterialTheme.colorScheme.tertiaryContainer,
-                textColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                modifier = Modifier.weight(1f),
-            )
-            HelperBadge(
-                label = "Call",
-                value = "$$callAmount",
-                color = MaterialTheme.colorScheme.errorContainer,
-                textColor = MaterialTheme.colorScheme.onErrorContainer,
-                modifier = Modifier.weight(1f),
-            )
-            HelperBadge(
-                label = "Equity",
-                value = "$equity%",
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                textColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.weight(1f),
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Extra $ needed to break even?",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        if (isPractice) {
-            val currentTotal = problem.metadata["currentTotal"] ?: "0"
-            val breakEvenTotal = problem.metadata["breakEvenTotal"] ?: "0"
-
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        // PRACTICE+: outs count
+        if (difficulty == Difficulty.PRACTICE || difficulty == Difficulty.LEARNING) {
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 HelperBadge(
-                    label = "Break-even total",
-                    value = "$$breakEvenTotal",
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    textColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    label = "Outs",
+                    value = outs,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    textColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.weight(1f),
                 )
                 HelperBadge(
-                    label = "Current total",
-                    value = "$$currentTotal",
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    textColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.weight(1f),
+                    label = "Why $outs outs?",
+                    value = drawExplanation,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    textColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.weight(2f),
                 )
             }
         }
+
+        // LEARNING: multiplier + pot odds context
+        if (difficulty == Difficulty.LEARNING) {
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                HelperBadge(
+                    label = "Rule of $multiplier",
+                    value = "$outs \u00D7 $multiplier = ?",
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    textColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.weight(1f),
+                )
+                HelperBadge(
+                    label = "Pot odds",
+                    value = "$potOdds%",
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    textColor = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            HelperBadge(
+                label = "Context: pot \$${pot}, call \$${call}. If equity > pot odds \u2192 call",
+                value = "",
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                textColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared composables
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Composable
-private fun ChipBadge(label: String, value: String, isPrimary: Boolean) {
-    val bgColor = if (isPrimary) {
-        MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f)
-    } else {
-        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
-    }
-    val textColor = if (isPrimary) {
+private fun PokerChip(label: String, value: String, isPrimary: Boolean) {
+    val bg = if (isPrimary)
+        MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.8f)
+    else
+        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f)
+    val fg = if (isPrimary)
         MaterialTheme.colorScheme.onTertiaryContainer
-    } else {
+    else
         MaterialTheme.colorScheme.onErrorContainer
-    }
 
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(bgColor)
+            .background(bg)
             .padding(horizontal = 20.dp, vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = fg.copy(alpha = 0.7f))
+        Text(value, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold), color = fg)
+    }
+}
+
+@Composable
+private fun StreetBadge(street: String) {
+    val multiplier = if (street == "Flop") "4" else "2"
+    val description = if (street == "Flop") "2 cards to come \u2192 outs \u00D7 4" else "1 card to come \u2192 outs \u00D7 2"
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+    ) {
         Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = textColor.copy(alpha = 0.7f),
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = textColor,
+            text = "$street \u2014 $description",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

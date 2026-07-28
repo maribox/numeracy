@@ -46,10 +46,8 @@ fun ScenarioInfoSheet(
         when (scenarioType) {
             ScenarioType.DARTS -> DartsInfo()
             ScenarioType.BLACKJACK -> BlackjackInfo()
-            ScenarioType.POT_ODDS -> PokerInfo()
-            ScenarioType.OUTS_COUNTING -> OutsCountingInfo()
-            ScenarioType.EQUITY -> EquityInfo()
-            ScenarioType.IMPLIED_ODDS -> ImpliedOddsInfo()
+            ScenarioType.POT_ODDS -> PotOddsInfo()
+            ScenarioType.DRAW_EQUITY -> DrawEquityInfo()
             ScenarioType.MAKING_CHANGE -> MakingChangeInfo()
             ScenarioType.CURRENCY_EXCHANGE -> CurrencyExchangeInfo()
             ScenarioType.TIME_ZONES -> TimeZonesInfo()
@@ -550,185 +548,102 @@ private fun BlackjackInfo() {
     Spacer(modifier = Modifier.height(16.dp))
 }
 
-// ===== POKER =====
+// ===== POT ODDS =====
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PokerInfo() {
+private fun PotOddsInfo() {
     SectionTitle("What Are Pot Odds?")
     BodyText(
-        "Pot odds tell you what percentage of the time you need to win the hand to break even on a call. " +
-        "If the pot odds are lower than your chance of winning (your equity), calling is profitable in the " +
-        "long run. If the pot odds are higher than your equity, you should fold."
+        "Pot odds tell you the minimum win rate you need to break even on a call. " +
+        "If your chance of winning (equity) is higher than the pot odds, calling makes money long-term. " +
+        "If lower, fold."
     )
 
     SectionDivider()
 
     SectionTitle("The Formula")
-
     ExampleBox {
         Column {
-            Text(
-                text = "Pot Odds % = Call \u00F7 (Pot + Call) \u00D7 100",
-                style = MaterialTheme.typography.titleSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
-                ),
-                color = MaterialTheme.colorScheme.primary,
-            )
+            MonoText("Pot Odds % = Call ÷ (Pot + Call) × 100")
+            Spacer(modifier = Modifier.height(6.dp))
+            MonoText("If equity % > pot odds % → Call")
+            MonoText("If equity % < pot odds % → Fold")
         }
     }
 
-    BodyText(
-        "The pot is the money already in the middle. The call is what you need to add. " +
-        "You divide your call by the total pot (existing pot + your call) to get the percentage."
-    )
+    SectionDivider()
+
+    SectionTitle("Prerequisite")
+    BodyText("To use pot odds in practice you need to know your equity (win%). Train that first in Draw Equity.")
 
     SectionDivider()
 
-    SectionTitle("Step-by-Step")
-    NumberedStep(1, "Note the pot size (the money already in the middle).")
-    NumberedStep(2, "Note the call amount (what your opponent bet, and what you need to put in).")
-    NumberedStep(3, "Add them together to get the total pot.")
-    NumberedStep(4, "Divide the call by the total pot.")
-    NumberedStep(5, "Convert to a percentage - this is your break-even equity.")
+    SectionTitle("Difficulty Levels")
+    BulletPoint("Learning — total pot and simplified fraction shown. Just convert to %.")
+    BulletPoint("Practice — total pot shown. Divide call by total pot.")
+    BulletPoint("Normal — pot and call only. Your win% is given. Full calculation.")
+    BulletPoint("Hard — cards shown instead of win% — estimate equity yourself. Uglier numbers. ±2% accepted.")
 
     SectionDivider()
 
     SectionTitle("Worked Examples")
-
     ExampleBox {
         Column {
-            MonoText("Pot: \$60, Call: \$20")
+            MonoText("Pot: \$120, Call: \$40")
             Spacer(modifier = Modifier.height(4.dp))
-            MonoText("Total pot: 60 + 20 = \$80")
-            MonoText("Pot odds: 20/80 = 1/4 = 25%")
-            MonoText("")
-            MonoText("You need to win 25% of the time")
-            MonoText("to break even on this call.")
+            MonoText("Total = 120 + 40 = 160")
+            MonoText("Pot odds = 40/160 = 1/4 = 25%")
+            MonoText("✔ If you win > 25% of the time, call.")
         }
     }
-
     ExampleBox {
         Column {
-            MonoText("Pot: \$150, Call: \$50")
+            MonoText("Pot: \$100, Call: \$100")
             Spacer(modifier = Modifier.height(4.dp))
-            MonoText("Total pot: 150 + 50 = \$200")
-            MonoText("Pot odds: 50/200 = 1/4 = 25%")
-        }
-    }
-
-    ExampleBox {
-        Column {
-            MonoText("Pot: \$40, Call: \$40")
-            Spacer(modifier = Modifier.height(4.dp))
-            MonoText("Total pot: 40 + 40 = \$80")
-            MonoText("Pot odds: 40/80 = 1/2 = 50%")
-            MonoText("")
+            MonoText("Total = 100 + 100 = 200")
+            MonoText("Pot odds = 100/200 = 1/2 = 50%")
             MonoText("A pot-sized bet always gives 50% odds.")
         }
     }
 
     SectionDivider()
 
-    SectionTitle("Simplify the Fraction First")
-    BodyText(
-        "The key to fast calculation is simplifying the fraction before converting to a percentage. " +
-        "Look for common factors:"
-    )
-    BulletPoint("\$30/\$150 \u2192 divide both by 30 \u2192 1/5 = 20%")
-    BulletPoint("\$25/\$100 \u2192 divide both by 25 \u2192 1/4 = 25%")
-    BulletPoint("\$15/\$90 \u2192 divide both by 15 \u2192 1/6 \u2248 17%")
+    SectionTitle("Simplify First")
+    BodyText("Find what both numbers divide by to get a simple fraction:")
+    BulletPoint("\$30/\$150 ÷ 30 → 1/5 = 20%")
+    BulletPoint("\$25/\$100 ÷ 25 → 1/4 = 25%")
+    BulletPoint("\$60/\$180 ÷ 60 → 1/3 = 33%")
 
     SectionDivider()
 
-    SectionTitle("Common Ratios to Memorize")
-    BodyText("These patterns come up constantly. Know them by heart:")
+    SectionTitle("Fractions to Memorize")
     ChipRow(listOf(
         "1/2" to "50%", "1/3" to "33%", "1/4" to "25%",
         "1/5" to "20%", "1/6" to "17%", "1/7" to "14%",
-        "1/8" to "12.5%", "1/10" to "10%", "2/5" to "40%",
-        "2/7" to "29%", "3/8" to "37.5%", "3/10" to "30%",
+        "2/5" to "40%", "2/7" to "29%", "3/10" to "30%",
     ))
 
     SectionDivider()
 
-    SectionTitle("Quick Estimation Tricks")
-    BulletPoint("Half-pot bet \u2192 33% odds (you need to win 1 in 3).")
-    BulletPoint("Pot-sized bet \u2192 50% odds (you need to win 1 in 2).")
-    BulletPoint("Quarter-pot bet \u2192 20% odds (you need to win 1 in 5).")
-    BulletPoint("Double-pot bet \u2192 67% odds, you almost always fold unless you have the nuts.")
-
-    SectionDivider()
-
-    SectionTitle("The Rule of 2 and 4")
-    BodyText(
-        "To estimate your equity (chance of winning), count your outs (cards that complete your hand):"
-    )
-    BulletPoint("With 2 cards to come (flop): outs \u00D7 4 \u2248 equity %")
-    BulletPoint("With 1 card to come (turn): outs \u00D7 2 \u2248 equity %")
-    BodyText(
-        "Example: You have a flush draw (9 outs) on the flop. Equity \u2248 9 \u00D7 4 = 36%. " +
-        "If the pot odds are 25%, calling is profitable because 36% > 25%."
-    )
+    SectionTitle("Common Bet Sizes")
+    BulletPoint("Half-pot bet → 33% pot odds")
+    BulletPoint("Pot-sized bet → 50% pot odds")
+    BulletPoint("Quarter-pot bet → 20% pot odds")
+    BulletPoint("Double-pot bet → 67% pot odds")
 
     Spacer(modifier = Modifier.height(16.dp))
 }
 
-// ===== OUTS COUNTING =====
+// ===== DRAW EQUITY =====
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun OutsCountingInfo() {
-    SectionTitle("What Are Outs?")
+private fun DrawEquityInfo() {
+    SectionTitle("Rule of 2 & 4")
     BodyText(
-        "Outs are the unseen cards that will complete your hand and likely win you the pot. " +
-        "Counting outs accurately is the foundation of all poker math."
-    )
-
-    SectionDivider()
-
-    SectionTitle("Common Draws and Their Outs")
-    ExampleBox {
-        Column {
-            MonoText("Flush draw (4 suited)     = 9 outs")
-            MonoText("Open-ended straight       = 8 outs")
-            MonoText("Gutshot straight           = 4 outs")
-            MonoText("Double gutshot             = 8 outs")
-            MonoText("Two overcards              = 6 outs")
-            MonoText("One overcard               = 3 outs")
-            MonoText("Pocket pair \u2192 set          = 2 outs")
-            MonoText("Two pair \u2192 full house      = 4 outs")
-            MonoText("Set \u2192 full house/quads     = 7 outs")
-        }
-    }
-
-    SectionDivider()
-
-    SectionTitle("Combo Draws")
-    BodyText("When you have multiple draws, add the outs but subtract any overlap (cards that complete both draws):")
-    BulletPoint("Flush draw + gutshot: 9 + 4 \u2212 1 = 12 outs")
-    BulletPoint("Flush draw + open-ended: 9 + 8 \u2212 2 = 15 outs")
-    BulletPoint("Flush draw + two overcards: 9 + 6 = 15 outs (usually no overlap)")
-
-    SectionDivider()
-
-    SectionTitle("How to Count")
-    NumberedStep(1, "Identify your draw type (flush? straight? overcards?).")
-    NumberedStep(2, "Count cards of the needed rank/suit in the deck (13 per suit, 4 per rank).")
-    NumberedStep(3, "Subtract cards you can already see (your hand + board).")
-    NumberedStep(4, "For combo draws, add outs from each draw, then subtract cards counted twice.")
-
-    Spacer(modifier = Modifier.height(16.dp))
-}
-
-// ===== EQUITY =====
-
-@Composable
-private fun EquityInfo() {
-    SectionTitle("The Rule of 2 and 4")
-    BodyText(
-        "This shortcut lets you estimate your winning chance (equity) from your outs, " +
-        "without a calculator. It's accurate within 1\u20132% for most situations."
+        "When you have a drawing hand, you can estimate your equity (chance of winning) " +
+        "by counting your outs and applying a simple multiplier."
     )
 
     SectionDivider()
@@ -736,89 +651,72 @@ private fun EquityInfo() {
     SectionTitle("The Rule")
     ExampleBox {
         Column {
-            MonoText("Flop (2 cards to come):")
-            MonoText("  Equity \u2248 outs \u00D7 4")
-            MonoText("")
-            MonoText("Turn (1 card to come):")
-            MonoText("  Equity \u2248 outs \u00D7 2")
+            MonoText("Flop (2 cards to come): outs × 4")
+            MonoText("Turn (1 card to come):  outs × 2")
+        }
+    }
+    BodyText("Use ×4 only when opponent is all-in on the flop. In all other flop situations, use ×2 (you still face a turn bet).")
+
+    SectionDivider()
+
+    SectionTitle("Difficulty Levels")
+    BulletPoint("Learning — outs and multiplier shown. Just multiply.")
+    BulletPoint("Practice — outs shown. You pick ×4 (flop) or ×2 (turn).")
+    BulletPoint("Normal — draw name shown. You know the outs and apply the rule.")
+    BulletPoint("Hard — hole cards + board only. Identify the draw, count outs, apply the rule.")
+
+    SectionDivider()
+
+    SectionTitle("Draws to Memorize")
+    ExampleBox {
+        Column {
+            MonoText("Flush draw            = 9 outs")
+            MonoText("Open-ended straight   = 8 outs")
+            MonoText("Two overcards (A-K)   = 6 outs")
+            MonoText("Gutshot straight      = 4 outs")
+            MonoText("Flush + gutshot       ≈ 12 outs")
         }
     }
 
     SectionDivider()
 
-    SectionTitle("When to Use Which")
-    BulletPoint("Use \u00D74 only when your opponent is ALL IN on the flop (no more betting). You see both remaining cards for free.")
-    BulletPoint("Use \u00D72 when there is more betting to come (most situations). You might face another bet on the turn.")
-    BulletPoint("On the turn, always use \u00D72 (only one card left).")
-
-    SectionDivider()
-
-    SectionTitle("Quick Reference")
+    SectionTitle("Quick Reference Table")
     ExampleBox {
         Column {
-            MonoText("Outs   Flop(\u00D74)   Turn(\u00D72)")
-            MonoText("  2       8%        4%")
+            MonoText("Outs   Flop(×4)   Turn(×2)")
             MonoText("  4      16%        8%")
             MonoText("  6      24%       12%")
             MonoText("  8      32%       16%")
             MonoText("  9      36%       18%")
             MonoText(" 12      48%       24%")
-            MonoText(" 15      60%       30%")
         }
     }
 
-    Spacer(modifier = Modifier.height(16.dp))
-}
-
-// ===== IMPLIED ODDS =====
-
-@Composable
-private fun ImpliedOddsInfo() {
-    SectionTitle("What Are Implied Odds?")
-    BodyText(
-        "Sometimes the pot odds don't justify a call right now, but you expect to win more money " +
-        "on later streets when you hit your draw. Implied odds account for this future value."
-    )
-
     SectionDivider()
 
-    SectionTitle("The Formula")
+    SectionTitle("Combining with Pot Odds")
+    BodyText("Once you know your equity, compare it to the pot odds:")
+    BulletPoint("Equity > pot odds → call is profitable")
+    BulletPoint("Equity < pot odds → fold")
     ExampleBox {
         Column {
-            MonoText("Break-even total = Call \u00F7 Equity")
-            MonoText("Need to win = Break-even \u2212 Current pot \u2212 Call")
+            MonoText("Flush draw on flop (9 outs)")
+            MonoText("Equity ≈ 9 × 4 = 36%")
+            MonoText("")
+            MonoText("Pot: \$100, Call: \$50")
+            MonoText("Pot odds = 50/150 = 33%")
+            MonoText("")
+            MonoText("36% > 33% → Call is profitable")
         }
     }
 
     SectionDivider()
 
-    SectionTitle("Worked Example")
-    ExampleBox {
-        Column {
-            MonoText("Pot: \$80, Call: \$40, Equity: 18%")
-            MonoText("")
-            MonoText("Break-even total = \$40 \u00F7 0.18 = \$222")
-            MonoText("Current total = \$80 + \$40 = \$120")
-            MonoText("Need to win = \$222 \u2212 \$120 = \$102")
-            MonoText("")
-            MonoText("If you expect to win \$102+ on later")
-            MonoText("streets when you hit, calling is +EV.")
-        }
-    }
-
-    SectionDivider()
-
-    SectionTitle("When Implied Odds Are Good")
-    BulletPoint("Opponent has a deep stack (lots of money behind to win).")
-    BulletPoint("Your draw is hidden (opponent won't see it coming, e.g., gutshot).")
-    BulletPoint("Opponent tends to pay off big bets when they have a strong hand.")
-
-    SectionDivider()
-
-    SectionTitle("When Implied Odds Are Bad")
-    BulletPoint("Short stacks: not enough money behind to win.")
-    BulletPoint("Obvious draws: if a flush card hits, opponent may not pay you off.")
-    BulletPoint("Multi-way pots: harder to extract value from multiple opponents.")
+    SectionTitle("How to Count Outs")
+    NumberedStep(1, "Identify the draw (flush? straight? overcards?).")
+    NumberedStep(2, "Count how many unseen cards complete your hand.")
+    NumberedStep(3, "Subtract any cards you can already see.")
+    NumberedStep(4, "For combo draws, add outs from each draw and subtract any overlap.")
 
     Spacer(modifier = Modifier.height(16.dp))
 }
