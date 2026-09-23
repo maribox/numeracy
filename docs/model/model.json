@@ -692,7 +692,7 @@
       "uid": "STATE-PRACTICE-BLACKJACK",
       "tag": "STATE",
       "title": "Blackjack",
-      "statement": "A hand of cards to total, drawn as cards rather than written as a sum.",
+      "statement": "A hand of cards to total, dealt from a six-deck shoe and played by basic strategy against the dealer's card: it never takes a card at 21 or after busting, and it shows the suits it was dealt in.",
       "relations": [
         {
           "to": "VIEW-PRACTICE",
@@ -722,7 +722,7 @@
       "uid": "STATE-PRACTICE-DRAW-EQUITY",
       "tag": "STATE",
       "title": "Draw equity",
-      "statement": "A board and a hand, and the rule of two and four applied to the outs it leaves.",
+      "statement": "A hand and a board holding exactly the draw named, counted card by card, and the rule of 2 and 4 applied to its outs. On the flop the opponent is all in, the one spot where both cards come for one call.",
       "relations": [
         {
           "to": "VIEW-PRACTICE",
@@ -752,7 +752,7 @@
       "uid": "STATE-PRACTICE-POT-ODDS",
       "tag": "STATE",
       "title": "Pot odds",
-      "statement": "A pot and a call, and what share of the pot the call would be.",
+      "statement": "A pot and a call, and what share of the pot the call would be. The hand is a real draw, and the win% beside it is the chance that draw comes in by the river.",
       "relations": [
         {
           "to": "VIEW-PRACTICE",
@@ -842,7 +842,7 @@
       "uid": "STATE-PRACTICE-TIME-ZONES",
       "tag": "STATE",
       "title": "Time zones",
-      "statement": "A time in one city asked for in another, answered on a clock rather than a keypad. The clock starts at noon for each question and moves in five-minute steps, and Submit judges whatever it shows.",
+      "statement": "A time in one city in January or July, asked for in another, each city on its own clocks: daylight saving in the north in July, in Sydney and Auckland in January. Answered on a clock that starts at noon and moves in five-minute steps.",
       "relations": [
         {
           "to": "VIEW-PRACTICE",
@@ -1510,6 +1510,23 @@
       "relations": [
         {
           "to": "STORY-KETTLE",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-PRACTICE",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-PRACTICE-REAL-RULES",
+      "tag": "REQUIREMENT",
+      "title": "Every game plays by its real rules",
+      "statement": "Darts is 501 double out in visits of three, a bust returning the score to the start of the visit; blackjack is dealt from a shoe and played to a decision; poker draws have the outs they are named for; time zones keep each city's own daylight saving. No question shows a state the real game cannot reach.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-OCHE",
           "role": "Fulfils"
         },
         {
