@@ -782,7 +782,7 @@
       "uid": "STATE-PRACTICE-CHANGE",
       "tag": "STATE",
       "title": "Making change",
-      "statement": "A receipt and what was handed over, answered on a keypad that has a decimal point because the answer is money.",
+      "statement": "A receipt and what was handed over, answered on a keypad with a decimal point because the answer is money. Typed exactly as the change is written it is judged at once; written another way, 26.8 for 26.80, Submit judges it.",
       "relations": [
         {
           "to": "VIEW-PRACTICE",
@@ -842,7 +842,7 @@
       "uid": "STATE-PRACTICE-TIME-ZONES",
       "tag": "STATE",
       "title": "Time zones",
-      "statement": "A time in one city asked for in another, answered on a clock rather than a keypad, and the only question in the app with a Submit button.",
+      "statement": "A time in one city asked for in another, answered on a clock rather than a keypad. The clock starts at noon for each question and moves in five-minute steps, and Submit judges whatever it shows.",
       "relations": [
         {
           "to": "VIEW-PRACTICE",
@@ -962,7 +962,7 @@
       "uid": "STATE-PRACTICE-TEMPERATURE",
       "tag": "STATE",
       "title": "Temperature",
-      "statement": "Fahrenheit against Celsius, the one conversion with an offset as well as a factor.",
+      "statement": "Fahrenheit against Celsius, the one conversion with an offset as well as a factor, and the one whose answer can be below zero, so its keypad has a sign key on every question.",
       "relations": [
         {
           "to": "VIEW-PRACTICE",
@@ -1250,7 +1250,7 @@
       "uid": "REQ-PRACTICE-INPUT",
       "tag": "REQUIREMENT",
       "title": "The keypad fits the answer",
-      "statement": "A number answer gets a keypad, money gets the decimal point with it, a time gets a clock and a Submit, and a weekday gets the seven days.",
+      "statement": "A number answer gets a keypad, money gets the decimal point, an answer that can be below zero gets a sign key, a time gets a clock, and a weekday gets the seven days. Where an answer can be written another way than the stored one, or a tolerance accepts a different length, a Submit key judges what is typed.",
       "status": "Built",
       "relations": [
         {
@@ -1318,7 +1318,7 @@
       "uid": "REQ-PRACTICE-SAVE",
       "tag": "REQUIREMENT",
       "title": "Leaving saves the run",
-      "statement": "A run is written when practice is left, with every answer, what was typed and how long it took; a run with no answers is not written at all.",
+      "statement": "A run is written after every answer, with what was typed and how long it took, so a process the system kills in the background loses at most the answer being typed; a run with no answers is not written at all.",
       "status": "Built",
       "relations": [
         {
@@ -1497,6 +1497,23 @@
         },
         {
           "to": "VIEW-SETTINGS",
+          "role": "Lives in"
+        }
+      ]
+    },
+    {
+      "uid": "REQ-PRACTICE-ROTATION",
+      "tag": "REQUIREMENT",
+      "title": "Turning the phone keeps the run",
+      "statement": "Rotating the device mid-run keeps the question, the typed answer, the streak, the points and the fire. Time spent with the app out of sight counts neither as answering time nor as cooling.",
+      "status": "Built",
+      "relations": [
+        {
+          "to": "STORY-KETTLE",
+          "role": "Fulfils"
+        },
+        {
+          "to": "VIEW-PRACTICE",
           "role": "Lives in"
         }
       ]
