@@ -19,6 +19,18 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # The generators, grading, the practice session and storage are checked on every push; a
+      # question with a wrong answer is caught here rather than by someone practising it.
+      - name: Test
+        run: ./gradlew :composeApp:jvmTest
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: composeApp/build/reports/tests/
+
       - name: Build Android APK
         run: ./gradlew :composeApp:assembleDebug
 
