@@ -6,6 +6,10 @@ import it.bosler.numeracy.model.ScenarioType
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
+/**
+ * Temperatures in both directions. Either direction can land below zero, so every question in the
+ * scenario carries a sign key: offering it only where the answer is negative would give the sign away.
+ */
 class TemperatureConversionGenerator(private val rng: Random = Random.Default) : ProblemGenerator {
 
     // Landmark pairs for practice mode reference
@@ -25,10 +29,11 @@ class TemperatureConversionGenerator(private val rng: Random = Random.Default) :
             Problem(
                 scenarioType = ScenarioType.TEMPERATURE_CONVERSION,
                 tolerancePercent = 5.0,
+                allowsNegative = true,
                 questionText = "$celsius°C = ? °F",
                 correctAnswer = fahrenheit.toString(),
                 inputType = InputType.NUMBER,
-                explanation = "$celsius × 9/5 + 32 = $fahrenheit°F",
+                explanation = "$celsius × 9/5 + 32 ${relation(celsius * 9.0 / 5.0 + 32, fahrenheit)} $fahrenheit°F",
                 metadata = mapOf(
                     "value" to celsius.toString(),
                     "fromUnit" to "°C",
@@ -36,10 +41,12 @@ class TemperatureConversionGenerator(private val rng: Random = Random.Default) :
                     "context" to tempContext(celsius),
                     "trick" to "×2, subtract 10%, add 32",
                     "trickSteps" to run {
+                        // Each step works on the number the step before wrote down, so every sum
+                        // shown is true, and a negative tenth is added rather than subtracted twice.
                         val x2 = celsius * 2
-                        val pct = (x2 * 0.1).roundToInt()
-                        val sub = x2 - pct
-                        "$celsius × 2 = $x2\n- 10% = $x2 - $pct = $sub\n+ 32 = ${sub + 32}"
+                        val tenth = roundedQuotient(x2, 10)
+                        val less = x2 - tenth
+                        "$celsius × 2 = $x2\n− 10%: ${minusSigned(x2, tenth)} = $less\n+ 32: ${plusSigned(less, 32)} = ${less + 32}"
                     },
                     "nearestLandmarkC" to "${nearest.first}°C",
                     "nearestLandmarkF" to "${nearest.second}°F",
@@ -54,10 +61,11 @@ class TemperatureConversionGenerator(private val rng: Random = Random.Default) :
             Problem(
                 scenarioType = ScenarioType.TEMPERATURE_CONVERSION,
                 tolerancePercent = 5.0,
+                allowsNegative = true,
                 questionText = "$fahrenheit°F = ? °C",
                 correctAnswer = celsius.toString(),
                 inputType = InputType.NUMBER,
-                explanation = "($fahrenheit - 32) × 5/9 = $celsius°C",
+                explanation = "($fahrenheit − 32) × 5/9 ${relation((fahrenheit - 32) * 5.0 / 9.0, celsius)} $celsius°C",
                 metadata = mapOf(
                     "value" to fahrenheit.toString(),
                     "fromUnit" to "°F",
@@ -66,9 +74,9 @@ class TemperatureConversionGenerator(private val rng: Random = Random.Default) :
                     "trick" to "- 32, ÷ 2, add 10%",
                     "trickSteps" to run {
                         val sub = fahrenheit - 32
-                        val half = sub / 2.0
-                        val pct = (half * 0.1).roundToInt()
-                        "$fahrenheit - 32 = $sub\n÷ 2 = ${half.roundToInt()}\n+ 10% ≈ ${half.roundToInt()} + $pct = ${half.roundToInt() + pct}"
+                        val half = roundedQuotient(sub, 2)
+                        val tenth = roundedQuotient(half, 10)
+                        "$fahrenheit − 32 = $sub\n${divisionStep(sub, 2)}\n+ 10%: ${plusSigned(half, tenth)} = ${half + tenth}"
                     },
                     "nearestLandmarkC" to "${nearest.first}°C",
                     "nearestLandmarkF" to "${nearest.second}°F",

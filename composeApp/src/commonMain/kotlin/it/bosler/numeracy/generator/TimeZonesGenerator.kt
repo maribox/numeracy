@@ -63,51 +63,6 @@ class TimeZonesGenerator(private val rng: Random = Random.Default) : ProblemGene
         val direction = if (diffMinutes >= 0) "ahead" else "behind"
         val addOrSub = if (diffMinutes >= 0) "add" else "subtract"
 
-        // === LEARNING (hintEasy): Full step-by-step ===
-        val hintEasy = buildString {
-            append("UTC offsets:\n")
-            append("  ${from.city}: UTC$fromOffsetStr\n")
-            append("  ${to.city}: UTC$toOffsetStr\n")
-            append("Difference: $toOffsetStr \u2212 ($fromOffsetStr) = ")
-            if (diffMins == 0) {
-                append("${if (diffMinutes >= 0) "+" else ""}${diffMinutes / 60} hours\n")
-            } else {
-                append("${if (diffMinutes >= 0) "+" else ""}${diffMinutes / 60}h ${diffMins}m\n")
-            }
-            append("${formatTime(hour, minute)}")
-            if (diffMinutes >= 0) {
-                append(" + ${diffHours}h")
-                if (diffMins > 0) append(" ${diffMins}m")
-            } else {
-                append(" \u2212 ${diffHours}h")
-                if (diffMins > 0) append(" ${diffMins}m")
-            }
-            append(" = $answer")
-            // Midnight crossing warning
-            if ((hour * 60 + minute + diffMinutes) < 0 || (hour * 60 + minute + diffMinutes) >= 1440) {
-                append("\n⚠ Crossed midnight! (±24h)")
-            }
-        }
-
-        // === PRACTICE (hintMedium): Strategy without answer ===
-        val hintMedium = buildString {
-            append("${to.city} is $direction of ${from.city}.\n")
-            append("→ $addOrSub ${diffHours}h")
-            if (diffMins > 0) append(" ${diffMins}m")
-            append(" from ${formatTime(hour, minute)}\n")
-            // Teach hour arithmetic
-            val resultRaw = hour + (if (diffMinutes >= 0) diffHours else -diffHours)
-            if (resultRaw < 0) {
-                append("Tip: negative hours → add 24. E.g. ${resultRaw} → ${resultRaw + 24}")
-            } else if (resultRaw >= 24) {
-                append("Tip: over 24 → subtract 24. E.g. $resultRaw → ${resultRaw - 24}")
-            } else if (diffMins > 0 && minute + (if (diffMinutes >= 0) diffMins else -diffMins) >= 60) {
-                append("Tip: minutes overflow → carry 1 hour")
-            }
-        }
-
-        val hintHard = ""
-
         // Practice mode helper: offset difference as a readable string
         val offsetDiffDisplay = buildString {
             val sign = if (diffMinutes >= 0) "+" else "\u2212"
@@ -129,9 +84,6 @@ class TimeZonesGenerator(private val rng: Random = Random.Default) : ProblemGene
                 "season" to season,
                 // Practice mode helper
                 "offsetDiff" to offsetDiffDisplay,
-                "hintEasy" to hintEasy,
-                "hintMedium" to hintMedium,
-                "hintHard" to hintHard,
             ),
         )
     }

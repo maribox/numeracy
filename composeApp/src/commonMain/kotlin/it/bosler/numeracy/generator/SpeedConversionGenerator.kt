@@ -28,11 +28,7 @@ class SpeedConversionGenerator(private val rng: Random = Random.Default) : Probl
                     "toUnit" to "km/h",
                     "context" to speedContext(mph),
                     "trick" to "×8 ÷ 5",
-                    "trickSteps" to run {
-                        val x8 = mph * 8
-                        val r = x8 / 5
-                        "$mph × 8 = $x8\n$x8 ÷ 5 = $r"
-                    },
+                    "trickSteps" to "$mph × 8 = ${mph * 8}\n${divisionStep(mph * 8, 5)}",
                     "factor" to "1.609",
                     "needleNorm" to (mph.toDouble() / 130.0).coerceIn(0.0, 1.0).toString(),
                 ),
@@ -54,11 +50,7 @@ class SpeedConversionGenerator(private val rng: Random = Random.Default) : Probl
                     "toUnit" to "mph",
                     "context" to speedContextKmh(kmh),
                     "trick" to "×5 ÷ 8",
-                    "trickSteps" to run {
-                        val x5 = kmh * 5
-                        val r = x5 / 8
-                        "$kmh × 5 = $x5\n$x5 ÷ 8 = $r"
-                    },
+                    "trickSteps" to "$kmh × 5 = ${kmh * 5}\n${divisionStep(kmh * 5, 8)}",
                     "factor" to "0.6214",
                     "needleNorm" to (kmh.toDouble() / 210.0).coerceIn(0.0, 1.0).toString(),
                 ),

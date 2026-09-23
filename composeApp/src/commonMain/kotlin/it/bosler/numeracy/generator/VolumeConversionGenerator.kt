@@ -26,12 +26,12 @@ class VolumeConversionGenerator(private val rng: Random = Random.Default) : Prob
                 val pct = (x4 * 0.05).roundToInt()
                 "$v × 4 = $x4\n- 5% ≈ $x4 - $pct = ${x4 - pct}"
             }),
-        Conversion("L", "gal", 0.2642, 1..100, "Fuel tank",
+        Conversion("L", "gal", 0.2642, 12..100, "Fuel tank",
             "÷ 4, add 5%",
             { v ->
-                val d4 = v / 4.0
-                val pct = (d4 * 0.05).roundToInt()
-                "$v ÷ 4 ≈ ${d4.roundToInt()}\n+ 5% ≈ ${d4.roundToInt()} + $pct = ${d4.roundToInt() + pct}"
+                val quarter = roundedQuotient(v, 4)
+                val bit = (quarter * 0.05).roundToInt()
+                "${divisionStep(v, 4)}\n+ 5% ≈ $quarter + $bit = ${quarter + bit}"
             }),
         Conversion("cups", "mL", 236.6, 1..12, "Recipe",
             "×240 (or ×250 - 4%)",

@@ -30,10 +30,6 @@ class DoomsdayGenerator(private val rng: Random = Random.Default) : ProblemGener
         val diffFromRef = ((day - doomsdayRef) % 7 + 7) % 7
         val centuryAnchor = centuryAnchorName(year)
 
-        val (hintEasy, hintMedium, hintHard) = buildHints(
-            year, month, day, monthName, doomsdayAnchor, doomsdayName, doomsdayRef, diffFromRef, centuryAnchor
-        )
-
         return Problem(
             scenarioType = ScenarioType.DOOMSDAY,
             questionText = "What day of the week is\n\n$monthName $day$daySuffix, $year?",
@@ -51,10 +47,6 @@ class DoomsdayGenerator(private val rng: Random = Random.Default) : ProblemGener
                 put("yearDoomsday", doomsdayName)
                 put("monthAnchorDate", "${doomsdayRef}${getDaySuffix(doomsdayRef)}")
                 put("monthAnchorDay", doomsdayName)
-                put("hintEasy", hintEasy)
-                put("hintMedium", hintMedium)
-                put("hintHard", hintHard)
-                put("tip", buildTip())
                 // Structured year calculation steps for practice mode
                 val yy = year % 100
                 val a = yy / 12
@@ -73,75 +65,6 @@ class DoomsdayGenerator(private val rng: Random = Random.Default) : ProblemGener
             },
         )
     }
-
-    private fun buildHints(
-        year: Int, month: Int, day: Int, monthName: String,
-        doomsdayAnchor: Int, doomsdayName: String,
-        doomsdayRef: Int, diffFromRef: Int, centuryAnchor: String,
-    ): Triple<String, String, String> {
-        val yy = year % 100
-        val a = yy / 12
-        val b = yy % 12
-        val c = b / 4
-        val sum = a + b + c
-        val refSuffix = getDaySuffix(doomsdayRef)
-        val centuryDayIndex = dayNames.indexOf(centuryAnchor)
-
-        // === LEARNING (hintEasy): Full worked calculation ===
-        val hintEasy = buildString {
-            append("① Century: ${year / 100 * 100}s → $centuryAnchor ($centuryDayIndex)\n")
-            append("② Year yy=$yy:\n")
-            append("   $yy ÷ 12 = $a remainder $b\n")
-            append("   $b ÷ 4 = $c\n")
-            append("   $a + $b + $c = $sum\n")
-            append("   Doomsday: ($centuryDayIndex + $sum) mod 7 = ${(centuryDayIndex + sum) % 7} → $doomsdayName\n")
-            append("③ $monthName anchor: ${doomsdayRef}${refSuffix}")
-            // Explain which mnemonic
-            when (month) {
-                4, 6, 8, 10, 12 -> append(" (even months: 4/4, 6/6, 8/8...)")
-                5 -> append(" (\"9-to-5 at 7-11\")")
-                9 -> append(" (\"9-to-5 at 7-11\")")
-                7 -> append(" (\"9-to-5 at 7-11\")")
-                11 -> append(" (\"9-to-5 at 7-11\")")
-                3 -> append(" (3/7, \"3 out of 7 days\")")
-                1 -> append(" (Jan 3rd, or 4th in leap years)")
-                2 -> append(" (last day of Feb)")
-                else -> {}
-            }
-            append("\n")
-            append("④ $day \u2212 $doomsdayRef = ")
-            if (diffFromRef == 0) {
-                append("0 → same day: $doomsdayName")
-            } else {
-                append("$diffFromRef days forward\n")
-                append("   $doomsdayName + $diffFromRef = ${dayNames[(doomsdayAnchor + diffFromRef) % 7]}")
-            }
-        }
-
-        // === PRACTICE (hintMedium): Guided without answer ===
-        val hintMedium = buildString {
-            append("Century: ${year / 100 * 100}s → $centuryAnchor\n")
-            append("Year calculation: yy=$yy → $yy÷12, remainder, remainder÷4, sum them\n")
-            append("$monthName anchor: ${doomsdayRef}${refSuffix} is always on Doomsday\n")
-            append("Count: how many days from ${doomsdayRef}${refSuffix} to ${day}${getDaySuffix(day)}?")
-            if (diffFromRef > 7) {
-                append("\nTip: ${day} \u2212 $doomsdayRef = ${day - doomsdayRef}, then mod 7 = $diffFromRef")
-            }
-        }
-
-        val hintHard = ""
-
-        return Triple(hintEasy, hintMedium, hintHard)
-    }
-
-    private fun buildTip(): String =
-        "The Doomsday Algorithm in 4 steps:\n" +
-        "1. CENTURY ANCHOR: 1800s→Fri, 1900s→Wed, 2000s→Tue, 2100s→Sun\n" +
-        "2. YEAR'S DOOMSDAY: Take last 2 digits (yy). Compute: yy÷12 + remainder + remainder÷4. Add to century anchor (mod 7).\n" +
-        "3. MONTH ANCHOR: Every month has a date that always falls on Doomsday: " +
-        "1/3(or 4), 2/28(or 29), 3/7, 4/4, 5/9, 6/6, 7/11, 8/8, 9/5, 10/10, 11/7, 12/12. " +
-        "Remember: 'I work 9-5 at 7-11' for odd months.\n" +
-        "4. COUNT: From the month's anchor date to your target date, count days forward or backward."
 
     // Returns the doomsday weekday index (0=Sun…6=Sat) for a given year
     private fun doomsdayForYear(year: Int): Int {

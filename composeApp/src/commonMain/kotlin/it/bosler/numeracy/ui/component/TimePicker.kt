@@ -22,6 +22,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * How far one tap moves the minutes. Time zone questions are asked on the quarter hour, so a step of
+ * five reaches any answer in at most six taps where a step of one took up to forty-five.
+ */
+const val MINUTE_STEP = 5
+
 @Composable
 fun TimeInput(
     hours: Int,
@@ -57,6 +63,7 @@ fun TimeInput(
         TimeScroller(
             value = minutes,
             range = 0..59,
+            step = MINUTE_STEP,
             onValueChange = { if (enabled) onMinutesChange(it) },
             enabled = enabled,
         )
@@ -67,6 +74,7 @@ fun TimeInput(
 private fun TimeScroller(
     value: Int,
     range: IntRange,
+    step: Int = 1,
     onValueChange: (Int) -> Unit,
     enabled: Boolean,
 ) {
@@ -89,8 +97,9 @@ private fun TimeScroller(
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 .then(
                     if (enabled) Modifier.clickable {
-                        val next = if (value >= range.last) range.first else value + 1
-                        onValueChange(next)
+                        // Wraps past the end, and lands on the step even from a value off it.
+                        val next = (value / step + 1) * step
+                        onValueChange(if (next > range.last) range.first else next)
                     } else Modifier
                 ),
             contentAlignment = Alignment.Center,
@@ -131,8 +140,8 @@ private fun TimeScroller(
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 .then(
                     if (enabled) Modifier.clickable {
-                        val prev = if (value <= range.first) range.last else value - 1
-                        onValueChange(prev)
+                        val prev = if (value % step != 0) value / step * step else value - step
+                        onValueChange(if (prev < range.first) range.last / step * step else prev)
                     } else Modifier
                 ),
             contentAlignment = Alignment.Center,

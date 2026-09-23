@@ -11,7 +11,8 @@ class SquaringGenerator(private val rng: Random = Random.Default) : ProblemGener
         val answer = number.toLong() * number.toLong()
 
         val tricks = buildApplicableTricks(number, answer)
-        val selectedTrick = tricks.random(rng)
+        // The display opens on the first trick, so the badge and the working describe the same one.
+        val selectedTrick = tricks.first()
 
         return Problem(
             scenarioType = ScenarioType.SQUARING,
@@ -40,7 +41,8 @@ class SquaringGenerator(private val rng: Random = Random.Default) : ProblemGener
         )
     }
 
-    private fun buildApplicableTricks(n: Int, answer: Long): List<MathTrick> {
+    /** Every trick that works for [n] squared, best first. */
+    internal fun buildApplicableTricks(n: Int, answer: Long): List<MathTrick> {
         val tricks = mutableListOf<MathTrick>()
 
         val tens = (n / 10) * 10

@@ -22,7 +22,7 @@ class PokerGenerator(
         val simplNum = callAmount / gcd
         val simplDen = totalPot / gcd
 
-        val deck = fullDeck().shuffled()
+        val deck = fullDeck().shuffled(rng)
         val hole = deck.take(2)
         val boardSize = if (rng.nextBoolean()) 3 else 4
         val board = deck.drop(2).take(boardSize)

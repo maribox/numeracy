@@ -65,7 +65,7 @@ class DrawEquityGenerator(
 
     private fun generateCards(draw: Draw, isFlop: Boolean): Pair<List<it.bosler.numeracy.model.Card>, List<it.bosler.numeracy.model.Card>> {
         val deck = fullDeck().toMutableList()
-        deck.shuffle()
+        deck.shuffle(rng)
 
         val (hole, boardExtra) = when (draw.name) {
             "Flush draw" -> generateFlushDraw(deck)
@@ -77,7 +77,7 @@ class DrawEquityGenerator(
         }
 
         val used = hole + boardExtra
-        val extras = deck.filter { it !in used }.shuffled()
+        val extras = deck.filter { it !in used }.shuffled(rng)
         val board = if (isFlop) boardExtra.take(2) + extras.take(1) else boardExtra.take(2) + extras.take(2)
         return hole to board
     }
@@ -85,7 +85,7 @@ class DrawEquityGenerator(
     // hole: 2 of suit S; boardExtra: 2 more of suit S
     private fun generateFlushDraw(deck: List<it.bosler.numeracy.model.Card>): Pair<List<it.bosler.numeracy.model.Card>, List<it.bosler.numeracy.model.Card>> {
         val suit = Suit.entries.random(rng)
-        val suited = deck.filter { it.suit == suit }.shuffled()
+        val suited = deck.filter { it.suit == suit }.shuffled(rng)
         return suited.take(2) to suited.drop(2).take(2)
     }
 
@@ -117,14 +117,14 @@ class DrawEquityGenerator(
     private fun generateOvercards(deck: List<it.bosler.numeracy.model.Card>): Pair<List<it.bosler.numeracy.model.Card>, List<it.bosler.numeracy.model.Card>> {
         val ace = deck.filter { it.rank == Rank.ACE }.random(rng)
         val king = deck.filter { it.rank == Rank.KING }.random(rng)
-        val low = deck.filter { it !in listOf(ace, king) && it.rank.value <= 10 }.shuffled().take(2)
+        val low = deck.filter { it !in listOf(ace, king) && it.rank.value <= 10 }.shuffled(rng).take(2)
         return listOf(ace, king) to low
     }
 
     // hole: 2 suited + part of a gutshot; boardExtra: 2 more suited
     private fun generateFlushGutshot(deck: List<it.bosler.numeracy.model.Card>): Pair<List<it.bosler.numeracy.model.Card>, List<it.bosler.numeracy.model.Card>> {
         val suit = Suit.entries.random(rng)
-        val suited = deck.filter { it.suit == suit && it.rank.value in 5..13 }.shuffled()
+        val suited = deck.filter { it.suit == suit && it.rank.value in 5..13 }.shuffled(rng)
         return suited.take(2) to suited.drop(2).take(2)
     }
 }

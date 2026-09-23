@@ -12,7 +12,8 @@ class MultiplicationGenerator(private val rng: Random = Random.Default) : Proble
         val answer = a.toLong() * b.toLong()
 
         val tricks = buildApplicableTricks(a, b, answer)
-        val selectedTrick = tricks.random(rng)
+        // The display opens on the first trick, so the badge and the working describe the same one.
+        val selectedTrick = tricks.first()
 
         return Problem(
             scenarioType = ScenarioType.MULTIPLICATION,
@@ -42,13 +43,32 @@ class MultiplicationGenerator(private val rng: Random = Random.Default) : Proble
         )
     }
 
-    private fun buildApplicableTricks(a: Int, b: Int, answer: Long): List<MathTrick> {
+    /** Every trick that works for [a] × [b], best first. Never empty: some split always applies. */
+    internal fun buildApplicableTricks(a: Int, b: Int, answer: Long): List<MathTrick> {
         val tricks = mutableListOf<MathTrick>()
 
         val bTens = (b / 10) * 10
         val bOnes = b % 10
         val aTens = (a / 10) * 10
         val aOnes = a % 10
+
+        // 0. Both multiples of ten: neither number splits into tens and ones, and none of the
+        // special cases need apply, so without this there is nothing to show at all.
+        if (aOnes == 0 && bOnes == 0) {
+            val leading = (a / 10).toLong() * (b / 10).toLong()
+            tricks.add(
+                MathTrick(
+                    name = "Drop the zeros",
+                    hint = "a0 \u00D7 b0 = (a \u00D7 b) with two zeros",
+                    steps = listOf(
+                        "Take the zeros off: #a{${a / 10}} \u00D7 #b{${b / 10}}",
+                        "#a{${a / 10}} \u00D7 #b{${b / 10}} = #c{$leading}",
+                        "Put both zeros back: #c{$leading} \u00D7 100 = #r{$answer}",
+                    ),
+                    priority = 95,
+                )
+            )
+        }
 
         // 1. Distributive — split b
         if (bOnes != 0) {
@@ -284,6 +304,7 @@ class MultiplicationGenerator(private val rng: Random = Random.Default) : Proble
             )
         }
 
+        check(tricks.isNotEmpty()) { "no trick for $a \u00D7 $b" }
         return tricks.sortedByDescending { it.priority }
     }
 }

@@ -3,6 +3,7 @@ package it.bosler.numeracy.generator
 import it.bosler.numeracy.model.Problem
 import it.bosler.numeracy.model.ScenarioType
 import kotlin.math.roundToInt
+import kotlin.math.roundToLong
 import kotlin.random.Random
 
 class CurrencyExchangeGenerator(private val rng: Random = Random.Default) : ProblemGenerator {
@@ -39,28 +40,19 @@ class CurrencyExchangeGenerator(private val rng: Random = Random.Default) : Prob
         val currency = currencies[rng.nextInt(currencies.size)]
         val eurAmount = listOf(10, 20, 25, 50, 75, 100, 150, 200, 250, 500)[rng.nextInt(10)]
 
-        val converted = eurAmount * currency.rateToEur
-        val answer = if (converted > 100) converted.roundToInt().toString()
-        else {
-            val rounded = (converted * 100).roundToInt() / 100.0
-            formatAmount(rounded)
-        }
+        // Rates carry at most two decimals, so the converted amount is a whole number of cents.
+        val exactCents = (eurAmount * currency.rateToEur * 100).roundToLong()
+        // Above a hundred the answer is asked in whole units, and the unrounded amount is right too.
+        val inWholeUnits = exactCents > 100_00
+        val answer = if (inWholeUnits) ((exactCents + 50) / 100).toString() else formatCents(exactCents)
 
         val rateStr = formatAmount(currency.rateToEur)
-        // === LEARNING (hintEasy): Full multiplication walkthrough ===
-        val hintEasy = buildFullBreakdown(eurAmount, currency.rateToEur, rateStr, currency.symbol, answer)
-
-        // === PRACTICE (hintMedium): Strategy guidance ===
-        val hintMedium = buildStrategyHint(eurAmount, currency.rateToEur, rateStr)
-
-        val hintHard = ""
-
         // Practice mode helpers: break down the multiplication
         val wholeRate = currency.rateToEur.toInt()
         val fracRate = currency.rateToEur - wholeRate
         val wholeResult = eurAmount * wholeRate
         val practiceHint = if (currency.rateToEur < 1) {
-            val pctOff = ((1.0 - currency.rateToEur) * 100).toInt()
+            val pctOff = ((1.0 - currency.rateToEur) * 100).roundToInt()
             "subtract $pctOff%"
         } else if (fracRate > 0.001) {
             "×$wholeRate = $wholeResult, +×${formatAmount(fracRate)}"
@@ -73,7 +65,8 @@ class CurrencyExchangeGenerator(private val rng: Random = Random.Default) : Prob
             questionText = "Convert €$eurAmount to ${currency.name} (${currency.code}).\n\nRate: 1 EUR = ${formatAmount(currency.rateToEur)} ${currency.code}",
             correctAnswer = answer,
             inputType = it.bosler.numeracy.model.InputType.MONEY,
-            explanation = "€$eurAmount × ${currency.rateToEur} = ${currency.symbol}$answer",
+            explanation = "€$eurAmount × $rateStr ${if (exactCents % 100 == 0L || !inWholeUnits) "=" else "\u2248"} ${currency.symbol}$answer",
+            absoluteTolerance = if (inWholeUnits) 0.5 else 0.0,
             metadata = mapOf(
                 "fromAmount" to eurAmount.toString(),
                 "fromCurrency" to "EUR",
@@ -84,101 +77,12 @@ class CurrencyExchangeGenerator(private val rng: Random = Random.Default) : Prob
                 // Practice mode helpers
                 "wholeResult" to wholeResult.toString(),
                 "practiceHint" to practiceHint,
-                "hintEasy" to hintEasy,
-                "hintMedium" to hintMedium,
-                "hintHard" to hintHard,
-                "tip" to buildTip(),
             ),
         )
     }
 
-    private fun buildTip(): String =
-        "Currency Conversion Tips:\n" +
-        "• Round the rate to a nearby easy number first. Rate 1.47 → use 1.5 ('add half'). Rate 0.86 → use 0.9 ('subtract 10%').\n" +
-        "• Split whole + fraction: amount × 1.08 = amount × 1 + amount × 0.08. E.g. €50 × 1.08 = 50 + 4 = 54.\n" +
-        "• Build currency landmarks for the trip: memorise what €1, €5, €10, €50 equal, then scale for other amounts.\n" +
-        "• Use powers-of-10 rates: rate ≈ 1.2 means +20%; rate ≈ 0.75 means ×3/4 (divide by 4 and multiply by 3).\n" +
-        "• Large multipliers (e.g. ×162 for JPY): compute ×100 first, then ×60 (= ×6 × 10), then add. €10 × 162 = 1000 + 620 = 1620.\n" +
-        "• Always verify direction: multiply when going from the '1' side, divide when going back."
-
-    private fun buildFullBreakdown(eurAmount: Int, rate: Double, rateStr: String, symbol: String, answer: String): String {
-        val wholeRate = rate.toInt()
-        val fracRate = rate - wholeRate
-
-        return buildString {
-            append("€$eurAmount \u00D7 $rateStr:\n")
-
-            if (rate < 1) {
-                // Rate < 1: think of it as "subtract X%"
-                val pctOff = ((1.0 - rate) * 100).toInt()
-                val pctAmount = (eurAmount * (1.0 - rate)).let { formatAmount(it.toInt().toDouble()) }
-                append("Rate < 1 → subtract ~$pctOff%\n")
-                append("$pctOff% of $eurAmount ≈ $pctAmount\n")
-                append("$eurAmount \u2212 $pctAmount = $answer\n")
-            } else if (fracRate == 0.0) {
-                // Whole rate
-                if (eurAmount <= 10) {
-                    append("$eurAmount \u00D7 $wholeRate = $answer")
-                } else {
-                    // Break amount into factors
-                    val factor = when {
-                        eurAmount % 100 == 0 -> 100
-                        eurAmount % 50 == 0 -> 50
-                        eurAmount % 10 == 0 -> 10
-                        else -> eurAmount
-                    }
-                    if (factor < eurAmount) {
-                        val multiplier = eurAmount / factor
-                        val partial = factor * wholeRate
-                        append("$factor \u00D7 $wholeRate = $partial\n")
-                        append("$partial \u00D7 $multiplier = $answer")
-                    } else {
-                        append("$eurAmount \u00D7 $wholeRate = $answer")
-                    }
-                }
-            } else {
-                // Split whole + fraction
-                val wholeContrib = eurAmount * wholeRate
-                val fracContrib = eurAmount * fracRate
-                val fracContribStr = formatAmount(fracContrib)
-                append("Split: $eurAmount \u00D7 $wholeRate = $wholeContrib\n")
-                append("       $eurAmount \u00D7 ${formatAmount(fracRate)} = $fracContribStr\n")
-                append("Add: $wholeContrib + $fracContribStr = $answer")
-            }
-        }
-    }
-
-    private fun buildStrategyHint(eurAmount: Int, rate: Double, rateStr: String): String {
-        return buildString {
-            if (rate < 1) {
-                val pctOff = ((1.0 - rate) * 100).toInt()
-                append("Rate < 1: think \"subtract $pctOff%\"\n")
-                append("Find $pctOff% of $eurAmount, then subtract from $eurAmount.\n")
-                if (pctOff in listOf(6, 14)) {
-                    append("Tip: $pctOff% ≈ ${pctOff / 2}% \u00D7 2. Find half first.")
-                }
-            } else {
-                val wholeRate = rate.toInt()
-                val fracRate = rate - wholeRate
-                if (fracRate > 0) {
-                    append("Split the rate: $rateStr = $wholeRate + ${formatAmount(fracRate)}\n")
-                    append("Multiply by $wholeRate first, then add the fractional part.\n")
-                    // Teach fractional shortcuts
-                    val fracPct = (fracRate * 100).toInt()
-                    when {
-                        fracPct == 50 -> append("0.5 = half. Easy to add.")
-                        fracPct == 25 -> append("0.25 = quarter. Divide by 4.")
-                        fracPct == 10 -> append("0.1 = move decimal. $eurAmount → ${eurAmount / 10.0}")
-                        fracPct in 1..9 -> append("Small fraction: ${formatAmount(fracRate)} ≈ ~${fracPct}%. Find ${fracPct}% of $eurAmount.")
-                        else -> append("${formatAmount(fracRate)}: break further if needed.")
-                    }
-                } else {
-                    append("Whole number rate. Break $eurAmount into easy parts if large.\n")
-                    append("E.g. $eurAmount = ${eurAmount / 2} \u00D7 2, or find $eurAmount \u00D7 10 first and adjust.")
-                }
-            }
-        }
-    }
+    /** Whole cents as an amount to the cent: 860 is "8.60". */
+    private fun formatCents(cents: Long): String = "${cents / 100}.${(cents % 100).toString().padStart(2, '0')}"
 
     private fun formatAmount(amount: Double): String {
         if (amount == amount.toLong().toDouble()) return amount.toLong().toString()

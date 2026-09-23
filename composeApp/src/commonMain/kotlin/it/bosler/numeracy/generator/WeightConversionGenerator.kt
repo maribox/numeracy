@@ -22,10 +22,10 @@ class WeightConversionGenerator(private val rng: Random = Random.Default) : Prob
         Conversion("lb", "kg", 0.4536, 50..300, "Body weight",
             "÷ 2, subtract 10%",
             { v ->
-                val half = v / 2.0
-                val pct = half * 0.1
-                val r = (half - pct).roundToInt()
-                "$v ÷ 2 = ${half.roundToInt()}\n- 10% ≈ ${half.roundToInt()} - ${pct.roundToInt()} = $r"
+                // Each step works on the number the step before wrote down, so the sums shown are true.
+                val half = roundedQuotient(v, 2)
+                val tenth = roundedQuotient(half, 10)
+                "${divisionStep(v, 2)}\n- 10% ≈ $half − $tenth = ${half - tenth}"
             }),
         Conversion("kg", "lb", 2.2046, 20..150, "Body weight",
             "×2, add 10%",
@@ -41,7 +41,7 @@ class WeightConversionGenerator(private val rng: Random = Random.Default) : Prob
                 val adj = (x30 * 0.07).roundToInt()
                 "$v × 30 = $x30\n- 7% ≈ $x30 - $adj = ${x30 - adj}"
             }),
-        Conversion("g", "oz", 0.03527, 25..900, "Cooking",
+        Conversion("g", "oz", 0.03527, 100..900, "Cooking",
             "÷ 28 (or ÷ 30 + a bit)",
             { v ->
                 val d30 = v / 30.0
