@@ -1,6 +1,7 @@
 package it.bosler.numeracy.gallery
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModelStore
 import it.bosler.numeracy.model.AnswerRecord
@@ -11,7 +12,9 @@ import it.bosler.numeracy.model.InputType
 import it.bosler.numeracy.model.RunRecord
 import it.bosler.numeracy.model.ScenarioType
 import it.bosler.numeracy.persistence.AppContext
-import it.bosler.numeracy.persistence.FileStorage
+import it.bosler.numeracy.persistence.InMemoryStorage
+import it.bosler.numeracy.persistence.RunRepository
+import it.bosler.numeracy.util.LocalClock
 import it.bosler.numeracy.ui.screen.HomeScreen
 import it.bosler.numeracy.ui.screen.PracticeScreen
 import it.bosler.numeracy.ui.screen.ScenariosScreen
@@ -19,7 +22,6 @@ import it.bosler.numeracy.ui.screen.SettingsScreen
 import it.bosler.numeracy.ui.screen.StatisticsScreen
 import it.bosler.numeracy.ui.screen.SubcategoryScenariosScreen
 import it.bosler.numeracy.viewmodel.PracticeViewModel
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 import kotlin.random.Random
@@ -175,20 +177,25 @@ private fun Practice(
     close: Boolean = false,
 ) {
     val viewModel = remember(scenarioType, difficulty) {
-        PracticeViewModel(scenarioType, difficulty, Random(SEED)).also { model ->
+        PracticeViewModel(scenarioType, difficulty, Random(SEED), AppContext.runRepository) { DRAWN_AT }.also { model ->
             repeat(correct) { answerRight(model) }
             repeat(wrong) { answerWrong(model) }
             if (close) answerClose(model)
             if (typed.isNotEmpty()) model.onAnswerChanged(typed)
             if (info) model.toggleInfo()
-            // In game mode the fire bar burns down on a timer of its own. Drawing takes seconds of
-            // real time, so left running it would put a different flame in the picture on every
-            // machine; cleared, the run stops where the answers left it.
+            // A close answer moves on after a pause measured in real time, and drawing takes seconds of
+            // it; cleared, the view model stays on the moment the answers left it in.
             ViewModelStore().apply { put("gallery", model) }.clear()
         }
     }
-    PracticeScreen(scenarioType = scenarioType, onBack = {}, viewModel = viewModel)
+    // The fire bar reads the clock every frame; frozen, it draws the same flame every time.
+    CompositionLocalProvider(LocalClock provides { DRAWN_AT }) {
+        PracticeScreen(scenarioType = scenarioType, onBack = {}, viewModel = viewModel)
+    }
 }
+
+/** The moment every practice screen is drawn at, on the clock its view model and fire bar share. */
+private const val DRAWN_AT = 1_760_000_000_000L
 
 private const val SEED = 20260728
 
@@ -282,21 +289,15 @@ private fun run(
 
 private const val FIRST_RUN_AT = 1_760_000_000_000L
 
-/**
- * Points the app's storage at a throwaway home and puts the given history in it. The app keeps its
- * runs under the user's home, and a gallery that drew from there would draw whoever ran it.
- */
-private fun useDevice(root: File, data: AppData) {
-    root.mkdirs()
-    System.setProperty("user.home", root.absolutePath)
-    File(root, ".numeracy").mkdirs()
-    File(root, ".numeracy/numeracy_data.json").writeText(Json.encodeToString(data))
-    AppContext.initialize(FileStorage())
+/** Gives the screens a device with [data] on it, held in memory: nothing is read from or written to disk. */
+private fun useDevice(data: AppData) {
+    AppContext.initialize(
+        InMemoryStorage(mapOf(RunRepository.FILE_NAME to Json.encodeToString(AppData.serializer(), data)))
+    )
 }
 
 fun main() {
     val outDir = File(System.getProperty("gallery.out") ?: "build/gallery")
-    val homes = File(System.getProperty("gallery.homes") ?: "build/gallery-home")
     // A change to one screen does not need the other thirty drawn again.
     val only = System.getProperty("gallery.only")?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
     val shapes = (System.getProperty("gallery.shapes") ?: "phone,wide").split(",").map { it.trim() }.toSet()
@@ -325,8 +326,7 @@ fun main() {
     for ((device, group) in wanted.groupBy { it.history to it.gameMode }) {
         val (history, gameMode) = device
         val data = if (history) practiceHistory() else AppData()
-        val home = "${if (history) "played" else "fresh"}-${if (gameMode) "game" else "plain"}-$shard"
-        useDevice(File(homes, home), data.copy(gameModeEnabled = gameMode))
+        useDevice(data.copy(gameModeEnabled = gameMode))
 
         for (scene in group) {
             // The screen as it is keeps the plain name; a state carries its own.

@@ -47,6 +47,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -70,7 +72,10 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import it.bosler.numeracy.model.InputType
+import it.bosler.numeracy.model.Problem
 import it.bosler.numeracy.model.ScenarioType
 import it.bosler.numeracy.ui.component.ConfettiEffect
 import it.bosler.numeracy.ui.component.NumPad
@@ -79,8 +84,9 @@ import it.bosler.numeracy.ui.component.TimeInput
 import it.bosler.numeracy.ui.component.WeekdayPicker
 import it.bosler.numeracy.ui.component.question.QuestionDisplay
 import it.bosler.numeracy.util.PlatformBackHandler
-import it.bosler.numeracy.util.currentTimeMillis
+import it.bosler.numeracy.util.LocalClock
 import it.bosler.numeracy.util.showBackButton
+import it.bosler.numeracy.viewmodel.Fire
 import it.bosler.numeracy.viewmodel.PracticeViewModel
 
 @Composable
@@ -91,8 +97,13 @@ fun PracticeScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    var timeHours by remember { mutableStateOf(12) }
-    var timeMinutes by remember { mutableStateOf(0) }
+    // The time picker starts at noon for each question and keeps what was set while the question stands.
+    var timeHours by remember(state.currentProblem) { mutableStateOf(12) }
+    var timeMinutes by remember(state.currentProblem) { mutableStateOf(0) }
+
+    // Out of sight is not answering time: the question's clock and the fire stop while the app is away.
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onPause() }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onResume() }
 
     PlatformBackHandler {
         viewModel.onQuit()
@@ -138,6 +149,8 @@ fun PracticeScreen(
                 if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
                 if (state.feedback != null) return@onKeyEvent false
                 val inputType = state.currentProblem.inputType
+                val typed = inputType == InputType.NUMBER || inputType == InputType.MONEY
+                if (!typed && event.key != Key.Enter && event.key != Key.NumPadEnter) return@onKeyEvent false
                 when (event.key) {
                     Key.Zero, Key.NumPad0 -> { viewModel.onAnswerChanged(state.userAnswer + "0"); true }
                     Key.One, Key.NumPad1 -> { viewModel.onAnswerChanged(state.userAnswer + "1"); true }
@@ -155,12 +168,18 @@ fun PracticeScreen(
                         }
                         true
                     }
+                    Key.Minus, Key.NumPadSubtract -> {
+                        if (state.currentProblem.allowsNegative) viewModel.onAnswerChanged(toggledSign(state.userAnswer))
+                        true
+                    }
                     Key.Backspace, Key.Delete -> {
                         if (state.userAnswer.isNotEmpty()) viewModel.onAnswerChanged(state.userAnswer.dropLast(1))
                         true
                     }
+                    // Enter judges whatever is typed, as the Submit key does.
                     Key.Enter, Key.NumPadEnter -> {
-                        if (inputType == InputType.TIME) viewModel.onSubmit()
+                        if (inputType == InputType.TIME) viewModel.onAnswerChanged(clockTime(timeHours, timeMinutes))
+                        viewModel.onSubmit()
                         true
                     }
                     else -> false
@@ -424,7 +443,7 @@ private fun TopBar(
             ) {
                 if (state.answerHistory.isNotEmpty()) {
                     SegmentedProgressBar(
-                        answers = state.answerHistory,
+                        answers = state.answerHistory.takeLast(HISTORY_SHOWN),
                         accentColor = scenarioType.startColor,
                     )
                 } else {
@@ -441,10 +460,9 @@ private fun TopBar(
             if (state.gameMode) {
                 Spacer(modifier = Modifier.height(6.dp))
                 FireBar(
-                    fireLevel = state.fireLevel,
+                    fire = state.fire,
+                    medianAnswerMs = viewModel.medianAnswerMs,
                     points = state.points,
-                    boostTrigger = state.fireBoostTrigger,
-                    questionStartMillis = state.questionStartMillis,
                 )
             }
         }
@@ -468,9 +486,10 @@ private fun AnswerDisplay(
                 .padding(vertical = 2.dp)
                 .offset { IntOffset(shakeOffset.toInt(), 0) },
         )
-        if (state.feedback?.isClose == true) {
+        val feedback = state.feedback
+        if (feedback?.isClose == true) {
             Text(
-                text = "Exact: ${state.feedback!!.correctAnswer}",
+                text = "Exact: ${feedback.correctAnswer}",
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = Color(0xFFFF9800),
                 modifier = Modifier.padding(bottom = 4.dp),
@@ -497,23 +516,24 @@ private fun InputArea(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
     when (state.currentProblem.inputType) {
-        InputType.NUMBER -> {
+        InputType.NUMBER, InputType.MONEY -> {
+            val problem = state.currentProblem
             NumPad(
                 value = state.userAnswer,
                 onValueChange = { viewModel.onAnswerChanged(it) },
-                showDecimal = false,
+                showDecimal = problem.inputType == InputType.MONEY,
+                showSign = problem.allowsNegative,
                 enabled = state.feedback == null,
                 compact = compact,
             )
-        }
-        InputType.MONEY -> {
-            NumPad(
-                value = state.userAnswer,
-                onValueChange = { viewModel.onAnswerChanged(it) },
-                showDecimal = true,
-                enabled = state.feedback == null,
-                compact = compact,
-            )
+            if (needsSubmitKey(problem)) {
+                Spacer(modifier = Modifier.height(if (compact) 4.dp else 8.dp))
+                SubmitButton(
+                    onClick = { viewModel.onSubmit() },
+                    enabled = state.feedback == null && state.userAnswer.isNotBlank(),
+                    compact = compact,
+                )
+            }
         }
         InputType.TIME -> {
             TimeInput(
@@ -521,34 +541,24 @@ private fun InputArea(
                 minutes = timeMinutes,
                 onHoursChange = { newHours ->
                     onTimeHoursChange(newHours)
-                    val h = newHours.toString().padStart(2, '0')
-                    val m = timeMinutes.toString().padStart(2, '0')
-                    viewModel.onAnswerChanged("$h:$m")
+                    viewModel.onAnswerChanged(clockTime(newHours, timeMinutes))
                 },
                 onMinutesChange = { newMinutes ->
                     onTimeMinutesChange(newMinutes)
-                    val h = timeHours.toString().padStart(2, '0')
-                    val m = newMinutes.toString().padStart(2, '0')
-                    viewModel.onAnswerChanged("$h:$m")
+                    viewModel.onAnswerChanged(clockTime(timeHours, newMinutes))
                 },
                 enabled = state.feedback == null,
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Button(
-                onClick = { viewModel.onSubmit() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+            // What the picker shows is the answer, including the noon it starts at.
+            SubmitButton(
+                onClick = {
+                    viewModel.onAnswerChanged(clockTime(timeHours, timeMinutes))
+                    viewModel.onSubmit()
+                },
                 enabled = state.feedback == null,
-                shape = RoundedCornerShape(20.dp),
-            ) {
-                Text(
-                    text = "Submit",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                    ),
-                )
-            }
+                compact = compact,
+            )
         }
         InputType.WEEKDAY -> {
             WeekdayPicker(
@@ -563,11 +573,19 @@ private fun InputArea(
 
 @Composable
 private fun FireBar(
-    fireLevel: Float,
+    fire: Fire,
+    medianAnswerMs: Long,
     points: Int,
-    boostTrigger: Int,
-    questionStartMillis: Long,
 ) {
+    // The heat is a function of time, read once a frame. Frames stop when the screen is out of
+    // sight, so nothing wakes the device to cool a fire nobody is looking at.
+    val clock = LocalClock.current
+    val fireLevel by produceState(fire.levelAt(clock(), medianAnswerMs), fire, medianAnswerMs) {
+        while (true) {
+            withFrameMillis { }
+            value = fire.levelAt(clock(), medianAnswerMs)
+        }
+    }
     val animatedFire by animateFloatAsState(
         targetValue = fireLevel,
         animationSpec = tween(400),
@@ -724,5 +742,40 @@ private fun SegmentedProgressBar(
                 cornerRadius = CornerRadius(radius, radius),
             )
         }
+    }
+}
+
+/** Answers shown in the progress bar; a long session would otherwise shrink them to hairlines. */
+private const val HISTORY_SHOWN = 20
+
+/**
+ * Whether the answer can be complete before it is as long as the stored one: an amount can be
+ * written "8.6" for "8.60", and a question with a tolerance accepts "99" for "101". Exact whole
+ * numbers are judged as soon as they are long enough and need no key.
+ */
+internal fun needsSubmitKey(problem: Problem): Boolean =
+    problem.inputType == InputType.MONEY || problem.tolerancePercent > 0 || problem.absoluteTolerance > 0
+
+/** "HH:MM", the way time answers are written. */
+internal fun clockTime(hours: Int, minutes: Int): String =
+    "${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}"
+
+/** [answer] with its sign flipped: the sign key and the keyboard's minus. */
+internal fun toggledSign(answer: String): String = if (answer.startsWith("-")) answer.drop(1) else "-$answer"
+
+@Composable
+private fun SubmitButton(onClick: () -> Unit, enabled: Boolean, compact: Boolean) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(if (compact) 44.dp else 56.dp),
+        enabled = enabled,
+        shape = RoundedCornerShape(20.dp),
+    ) {
+        Text(
+            text = "Submit",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+        )
     }
 }

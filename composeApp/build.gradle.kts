@@ -72,6 +72,13 @@ val generateBuildConfig = tasks.register("generateBuildConfig") {
 }
 
 kotlin {
+    compilerOptions {
+        // expect/actual classes are Beta; FileStorage is one per platform and is what the flag is for.
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+        // A warning is a finding: the build fails on one rather than letting them pile up unread.
+        allWarningsAsErrors.set(true)
+    }
+
     androidTarget {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
@@ -119,6 +126,7 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutinesTest)
         }
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
@@ -207,7 +215,6 @@ tasks.register<JavaExec>("renderGallery") {
     classpath = jvmMain.output.allOutputs + configurations.getByName("jvmRuntimeClasspath")
     mainClass.set("it.bosler.numeracy.gallery.GalleryKt")
     systemProperty("gallery.out", layout.buildDirectory.dir("gallery").get().asFile.absolutePath)
-    systemProperty("gallery.homes", layout.buildDirectory.dir("gallery-home").get().asFile.absolutePath)
     // Draw one screen, or one shape, while iterating on it: -Ponly=practice -Pshapes=phone
     (findProperty("only") as String?)?.let { systemProperty("gallery.only", it) }
     (findProperty("shapes") as String?)?.let { systemProperty("gallery.shapes", it) }

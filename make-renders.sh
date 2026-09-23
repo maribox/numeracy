@@ -47,7 +47,6 @@ pids=""
 for shard in $(seq 0 $((workers - 1))); do
   java \
     -Dgallery.out="$gallery" \
-    -Dgallery.homes="$here/composeApp/build/gallery-home" \
     -Dgallery.shard="$shard" \
     -Dgallery.shards="$workers" \
     ${only:+-Dgallery.only="$only"} \

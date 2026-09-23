@@ -17,13 +17,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.sp
+
+/** The key that flips the sign: plus-minus, the way calculators label it. */
+private const val SIGN = "\u00B1"
 
 @Composable
 fun NumPad(
     value: String,
     onValueChange: (String) -> Unit,
     showDecimal: Boolean = false,
+    /** A key that flips the answer's sign, for answers that can be below zero. */
+    showSign: Boolean = false,
     enabled: Boolean = true,
     compact: Boolean = false,
     modifier: Modifier = Modifier,
@@ -40,7 +49,7 @@ fun NumPad(
             listOf("1", "2", "3"),
             listOf("4", "5", "6"),
             listOf("7", "8", "9"),
-            listOf("", "0", "DEL"),
+            listOf(if (showSign) SIGN else "", "0", "DEL"),
         )
     }
 
@@ -70,6 +79,7 @@ fun NumPad(
                                             onValueChange(value.dropLast(1))
                                         }
                                     }
+                                    SIGN -> onValueChange(if (value.startsWith("-")) value.drop(1) else "-$value")
                                     "." -> {
                                         if (!value.contains(".")) {
                                             onValueChange(if (value.isEmpty()) "0." else "$value.")
@@ -112,11 +122,22 @@ private fun NumPadKey(
             .height(keyHeight)
             .clip(RoundedCornerShape(18.dp))
             .background(bgColor)
-            .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier),
+            .then(
+                if (enabled) Modifier.clickable(onClickLabel = null, role = Role.Button, onClick = onClick) else Modifier
+            )
+            .semantics {
+                contentDescription = when (key) {
+                    "DEL" -> "Delete"
+                    SIGN -> "Change sign"
+                    "." -> "Decimal point"
+                    else -> key
+                }
+            },
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = if (key == "DEL") "\u232B" else key,
+            modifier = Modifier.clearAndSetSemantics { },
             style = MaterialTheme.typography.titleLarge.copy(
                 fontSize = if (key == "DEL") 32.sp else 30.sp,
                 fontWeight = FontWeight.SemiBold,

@@ -5,16 +5,20 @@ import androidx.lifecycle.viewModelScope
 import it.bosler.numeracy.generator.generatorFor
 import it.bosler.numeracy.model.AnswerRecord
 import it.bosler.numeracy.model.Difficulty
-import it.bosler.numeracy.model.InputType
+import it.bosler.numeracy.model.Grade
 import it.bosler.numeracy.model.Problem
 import it.bosler.numeracy.model.RunRecord
 import it.bosler.numeracy.model.ScenarioType
+import it.bosler.numeracy.model.grade
+import it.bosler.numeracy.model.isComplete
 import it.bosler.numeracy.persistence.AppContext
+import it.bosler.numeracy.persistence.RunRepository
 import it.bosler.numeracy.util.currentTimeMillis
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
@@ -22,306 +26,206 @@ data class PracticeState(
     val currentProblem: Problem,
     val userAnswer: String = "",
     val feedback: Feedback? = null,
+    /** The last answer was wrong: the typed answer shakes and turns red until the next key. */
     val shake: Boolean = false,
     val streak: Int = 0,
     val bestStreak: Int = 0,
     val totalAnswered: Int = 0,
     val totalCorrect: Int = 0,
-    val questionStartMillis: Long = 0L,
     val difficulty: Difficulty = Difficulty.NORMAL,
     val showInfo: Boolean = false,
+    /** Hard darts hides the running score after a right answer; a wrong one shows it again. */
     val hideScore: Boolean = false,
+    /** Right and wrong, in the order answered. */
     val answerHistory: List<Boolean> = emptyList(),
-    val modeToastCounter: Int = 0,
-    // Game mode
     val gameMode: Boolean = false,
     val points: Int = 0,
-    val lastAnswerTimeMillis: Long = 0L,
     val lastPointsEarned: Int = 0,
+    /** Counts streak rewards; the confetti plays each time it changes. */
     val confettiTrigger: Int = 0,
-    val flameTrigger: Int = 0,
-    val correctFlashTrigger: Int = 0,
-    val wrongFlashTrigger: Int = 0,
-    val shockwaveTrigger: Int = 0,
-    val comboTrigger: Int = 0,
-    // Fire bar: 0.0 = cold, 1.0 = max heat. Decays over time, grows on correct answers.
-    val fireLevel: Float = 0f,
-    val fireBoostTrigger: Int = 0,
+    val fire: Fire = Fire(),
 )
 
 data class Feedback(
     val isCorrect: Boolean,
-    val isClose: Boolean = false, // close but not exact, show orange + correct answer
+    /** Accepted as near enough rather than exact, so the exact answer is shown beside it. */
+    val isClose: Boolean = false,
     val correctAnswer: String,
     val explanation: String,
 )
 
+/**
+ * One run of practice on one scenario: asks questions, grades answers, keeps the streak, the points
+ * and the fire, and writes the run after every answer.
+ *
+ * [clock] is the time answers are measured in and [repository] where the run goes; both default to
+ * the app's own and are replaced in tests and when screens are drawn off-device.
+ */
 class PracticeViewModel(
     private val scenarioType: ScenarioType,
     initialDifficulty: Difficulty = Difficulty.NORMAL,
     private val rng: Random = Random.Default,
+    private val repository: RunRepository = AppContext.runRepository,
+    private val clock: () -> Long = ::currentTimeMillis,
 ) : ViewModel() {
 
     private var difficulty: Difficulty = initialDifficulty
-    private val gameMode = AppContext.runRepository.isGameModeEnabled()
-
+    private val gameMode = repository.isGameModeEnabled()
     private var generator = generatorFor(scenarioType, difficulty, rng)
-    private val startedAt = currentTimeMillis()
-    private val answerRecords = mutableListOf<AnswerRecord>()
+
+    private val startedAt = clock()
+    private val runId = "${startedAt}_${Random.Default.nextInt(10_000)}"
+    private val answers = mutableListOf<AnswerRecord>()
+
+    /** When the question on screen was put there, less any time the screen spent out of sight. */
+    private var questionShownAt = startedAt
+    private var pausedAt: Long? = null
 
     private val _state = MutableStateFlow(
         PracticeState(
             currentProblem = generator.generate(),
-            questionStartMillis = currentTimeMillis(),
             difficulty = difficulty,
             gameMode = gameMode,
+            fire = Fire(since = startedAt),
         )
     )
     val state: StateFlow<PracticeState> = _state.asStateFlow()
 
-    init {
-        // Continuous fire decay — drains fully in ~2× the scenario's median answer time.
-        if (gameMode) {
-            val ticks = scenarioType.expectedMedianTimeMs * 2f / 200f
-            val k = 3f / ticks  // approximate: ∫f²·k from 1→0 over ticks
-            val c = k * 0.06f
-            viewModelScope.launch {
-                while (true) {
-                    delay(200)
-                    val current = _state.value
-                    if (current.fireLevel > 0.01f && current.feedback == null) {
-                        val decay = current.fireLevel * current.fireLevel * k + c
-                        _state.value = current.copy(
-                            fireLevel = (current.fireLevel - decay).coerceAtLeast(0f).let {
-                                if (it < 0.01f) 0f else it
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    }
+    /** The scenario's median answer time, which sets how fast the fire cools. */
+    val medianAnswerMs: Long get() = scenarioType.expectedMedianTimeMs
 
     fun onAnswerChanged(answer: String) {
         val current = _state.value
         if (current.feedback != null) return
         _state.value = current.copy(userAnswer = answer, shake = false)
-
-        val problem = current.currentProblem
-        val correctAnswer = problem.correctAnswer
-
-        when (problem.inputType) {
-            InputType.WEEKDAY -> tryAutoSubmit(answer, correctAnswer)
-            InputType.NUMBER -> {
-                if (answer.length == correctAnswer.length && answer.isNotEmpty()) {
-                    tryAutoSubmit(answer, correctAnswer)
-                }
-            }
-            InputType.MONEY -> {
-                if (answer.length == correctAnswer.length && answer.isNotEmpty()) {
-                    tryAutoSubmit(answer, correctAnswer)
-                }
-            }
-            InputType.TIME -> {}
-        }
+        if (isComplete(answer, current.currentProblem)) submit(answer)
     }
 
+    /** Grades whatever has been typed: the Submit key, Enter, and the time picker's button. */
     fun onSubmit() {
         val current = _state.value
-        if (current.feedback != null) return
-        if (current.userAnswer.isBlank()) return
-        tryAutoSubmit(current.userAnswer, current.currentProblem.correctAnswer)
+        if (current.feedback != null || current.userAnswer.isBlank()) return
+        submit(current.userAnswer)
     }
 
     fun toggleInfo() {
-        _state.value = _state.value.copy(showInfo = !_state.value.showInfo)
+        _state.update { it.copy(showInfo = !it.showInfo) }
     }
 
+    /** Takes effect from the next question; the one on screen keeps its numbers and shows the new helpers. */
     fun changeDifficulty(newDifficulty: Difficulty) {
         if (newDifficulty == difficulty) return
         difficulty = newDifficulty
         generator = generatorFor(scenarioType, difficulty, rng)
-        _state.value = _state.value.copy(
-            difficulty = newDifficulty,
-            modeToastCounter = _state.value.modeToastCounter + 1,
-            // Show score when switching away from Hard
-            hideScore = if (newDifficulty != Difficulty.HARD) false else _state.value.hideScore,
-        )
-    }
-
-    private fun tryAutoSubmit(answer: String, correctAnswer: String) {
-        val current = _state.value
-        val userAnswer = answer.trim()
-        val result = checkAnswer(userAnswer, correctAnswer, current.currentProblem.tolerancePercent)
-        val elapsed = currentTimeMillis() - current.questionStartMillis
-
-        when (result) {
-            AnswerResult.EXACT, AnswerResult.CLOSE -> {
-                val isClose = result == AnswerResult.CLOSE
-                val newStreak = current.streak + 1
-                val newBest = maxOf(current.bestStreak, newStreak)
-
-                answerRecords.add(
-                    AnswerRecord(
-                        questionText = current.currentProblem.questionText,
-                        correctAnswer = correctAnswer,
-                        userAnswer = userAnswer,
-                        isCorrect = true,
-                        timeMillis = elapsed,
-                    )
-                )
-
-                val shouldHideScore = difficulty == Difficulty.HARD && current.totalAnswered >= 0
-
-                // Game mode: fire bar + points
-                val newFireLevel: Float
-                val earnedPoints: Int
-                if (gameMode) {
-                    // Fire grows on correct answers. Speed boost scales to scenario median time.
-                    val median = scenarioType.expectedMedianTimeMs
-                    val speedBoost = when {
-                        elapsed < median * 0.3 -> 0.75f  // blazing fast
-                        elapsed < median * 0.6 -> 0.55f  // fast
-                        elapsed < median * 1.2 -> 0.35f  // around median
-                        else -> 0.18f                     // slow
-                    }
-                    newFireLevel = (current.fireLevel + speedBoost).coerceAtMost(1f)
-                    // Points scale with fire level: 50 at 0, up to 300 at max
-                    val multiplier = 1.0 + newFireLevel * 5.0
-                    earnedPoints = (50 * multiplier).toInt()
-                } else {
-                    newFireLevel = current.fireLevel
-                    earnedPoints = 0
-                }
-
-                val shouldConfetti = gameMode && (newStreak % 5 == 0 && newStreak > 0)
-
-                val next = {
-                    PracticeState(
-                        currentProblem = generator.generate(),
-                        streak = newStreak,
-                        bestStreak = newBest,
-                        totalAnswered = current.totalAnswered + 1,
-                        totalCorrect = current.totalCorrect + 1,
-                        questionStartMillis = currentTimeMillis(),
-                        difficulty = difficulty,
-                        hideScore = shouldHideScore,
-                        answerHistory = current.answerHistory + true,
-                        gameMode = gameMode,
-                        points = current.points + earnedPoints,
-                        lastPointsEarned = earnedPoints,
-                        confettiTrigger = if (shouldConfetti) current.confettiTrigger + 1 else current.confettiTrigger,
-                        fireLevel = newFireLevel,
-                    )
-                }
-
-                if (isClose) {
-                    // An answer inside the scenario's tolerance counts, and the exact one is shown
-                    // before the next question arrives: accepted silently, an estimate reads as
-                    // having been exactly right.
-                    _state.value = current.copy(
-                        userAnswer = userAnswer,
-                        feedback = Feedback(
-                            isCorrect = true,
-                            isClose = true,
-                            correctAnswer = correctAnswer,
-                            explanation = current.currentProblem.explanation,
-                        ),
-                    )
-                    viewModelScope.launch {
-                        delay(CLOSE_ANSWER_PAUSE_MS)
-                        _state.value = next()
-                    }
-                } else {
-                    // Exact answers advance immediately, with nothing to read in between.
-                    _state.value = next()
-                }
-            }
-
-            AnswerResult.WRONG -> {
-                answerRecords.add(
-                    AnswerRecord(
-                        questionText = current.currentProblem.questionText,
-                        correctAnswer = correctAnswer,
-                        userAnswer = userAnswer,
-                        isCorrect = false,
-                        timeMillis = elapsed,
-                    )
-                )
-
-                val newBest = maxOf(current.bestStreak, current.streak)
-
-                // Wrong answer: big fire penalty
-                val newFireLevel = (current.fireLevel - 0.3f).coerceAtLeast(0f)
-
-                _state.value = current.copy(
-                    userAnswer = "",
-                    shake = true,
-                    streak = 0,
-                    bestStreak = newBest,
-                    totalAnswered = current.totalAnswered + 1,
-                    hideScore = false,
-                    answerHistory = current.answerHistory + false,
-                    wrongFlashTrigger = if (gameMode) current.wrongFlashTrigger + 1 else current.wrongFlashTrigger,
-                    fireLevel = newFireLevel,
-                )
-            }
+        _state.update {
+            it.copy(difficulty = newDifficulty, hideScore = newDifficulty == Difficulty.HARD && it.hideScore)
         }
     }
 
-    fun onNext() {
-        val now = currentTimeMillis()
-        val current = _state.value
-        _state.value = PracticeState(
-            currentProblem = generator.generate(),
-            streak = current.streak,
-            bestStreak = current.bestStreak,
-            totalAnswered = current.totalAnswered,
-            totalCorrect = current.totalCorrect,
-            questionStartMillis = now,
-            difficulty = difficulty,
-            hideScore = current.hideScore,
-            answerHistory = current.answerHistory,
-            gameMode = gameMode,
-            points = current.points,
-            fireLevel = current.fireLevel,
-        )
+    /** The screen left sight. Time away is neither answering time nor time for the fire to cool. */
+    fun onPause() {
+        if (pausedAt == null) pausedAt = clock()
     }
 
+    fun onResume() {
+        val since = pausedAt ?: return
+        pausedAt = null
+        val away = clock() - since
+        questionShownAt += away
+        _state.update { it.copy(fire = it.fire.copy(since = it.fire.since + away)) }
+    }
+
+    /** Writes the run once more with its end time. It has been written after every answer already. */
     fun onQuit() {
-        if (answerRecords.isEmpty()) return
-        val run = RunRecord(
-            id = "${currentTimeMillis()}_${(0..9999).random()}",
-            scenarioType = scenarioType.name,
-            startedAt = startedAt,
-            endedAt = currentTimeMillis(),
-            answers = answerRecords.toList(),
-        )
-        AppContext.runRepository.saveRun(run)
+        if (answers.isNotEmpty()) repository.saveRun(currentRun())
     }
 
-    private enum class AnswerResult { EXACT, CLOSE, WRONG }
+    private fun currentRun() = RunRecord(
+        id = runId,
+        scenarioType = scenarioType.name,
+        startedAt = startedAt,
+        endedAt = clock(),
+        answers = answers.toList(),
+    )
+
+    private fun submit(answer: String) {
+        val current = _state.value
+        val problem = current.currentProblem
+        val given = answer.trim()
+        val now = clock()
+        val elapsed = now - questionShownAt
+        val result = grade(given, problem)
+        val right = result != Grade.WRONG
+
+        answers += AnswerRecord(
+            questionText = problem.questionText,
+            correctAnswer = problem.correctAnswer,
+            userAnswer = given,
+            isCorrect = right,
+            timeMillis = elapsed,
+        )
+        repository.saveRun(currentRun())
+
+        val heat = current.fire.levelAt(now, medianAnswerMs)
+        if (!right) {
+            _state.value = current.copy(
+                userAnswer = "",
+                shake = true,
+                streak = 0,
+                bestStreak = maxOf(current.bestStreak, current.streak),
+                totalAnswered = current.totalAnswered + 1,
+                hideScore = false,
+                answerHistory = current.answerHistory + false,
+                fire = if (gameMode) Fire((heat - WRONG_ANSWER_COOLING).coerceAtLeast(0f), now) else current.fire,
+            )
+            return
+        }
+
+        val streak = current.streak + 1
+        val newHeat = if (gameMode) (heat + heatFor(elapsed, medianAnswerMs)).coerceAtMost(1f) else 0f
+        val earned = if (gameMode) pointsFor(newHeat) else 0
+        val reward = gameMode && streak % STREAK_REWARD_EVERY == 0
+
+        val next = { at: Long ->
+            questionShownAt = at
+            PracticeState(
+                currentProblem = generator.generate(),
+                streak = streak,
+                bestStreak = maxOf(current.bestStreak, streak),
+                totalAnswered = current.totalAnswered + 1,
+                totalCorrect = current.totalCorrect + 1,
+                difficulty = difficulty,
+                hideScore = difficulty == Difficulty.HARD,
+                answerHistory = current.answerHistory + true,
+                gameMode = gameMode,
+                points = current.points + earned,
+                lastPointsEarned = earned,
+                confettiTrigger = current.confettiTrigger + if (reward) 1 else 0,
+                fire = Fire(newHeat, at),
+            )
+        }
+
+        if (result == Grade.CLOSE) {
+            // Near enough counts, and the exact answer stays on screen long enough to read before
+            // the next question: accepted silently, an estimate would read as exactly right.
+            _state.value = current.copy(
+                userAnswer = given,
+                feedback = Feedback(true, isClose = true, correctAnswer = problem.correctAnswer, explanation = problem.explanation),
+            )
+            viewModelScope.launch {
+                delay(CLOSE_ANSWER_PAUSE_MS)
+                _state.value = next(clock())
+            }
+        } else {
+            _state.value = next(now)
+        }
+    }
 
     private companion object {
         /** Long enough to read the exact answer, short enough not to interrupt a run. */
         const val CLOSE_ANSWER_PAUSE_MS = 1200L
-    }
 
-    private fun checkAnswer(userAnswer: String, correctAnswer: String, tolerancePercent: Double): AnswerResult {
-        if (userAnswer.equals(correctAnswer, ignoreCase = true)) return AnswerResult.EXACT
-        val userNum = userAnswer.toDoubleOrNull()
-        val correctNum = correctAnswer.toDoubleOrNull()
-        if (userNum != null && correctNum != null) {
-            if (kotlin.math.abs(userNum - correctNum) < 0.01) return AnswerResult.EXACT
-            if (tolerancePercent > 0) {
-                val tolerance = kotlin.math.abs(correctNum) * tolerancePercent / 100.0
-                // At minimum, accept ±1 for small numbers
-                val effectiveTolerance = maxOf(tolerance, 1.0)
-                if (kotlin.math.abs(userNum - correctNum) <= effectiveTolerance) {
-                    return AnswerResult.CLOSE
-                }
-            }
-        }
-        return AnswerResult.WRONG
+        /** Every this many right answers in a row is celebrated. */
+        const val STREAK_REWARD_EVERY = 5
     }
 }
