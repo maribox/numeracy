@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidApplication)
+    alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
@@ -18,31 +18,6 @@ val gitCommitCountProvider = providers.exec { commandLine("git", "rev-list", "--
     .standardOutput.asText.map { it.trim() }
 val buildDateProvider = providers.exec { commandLine("date", "+%Y-%m-%d %H:%M:%S") }
     .standardOutput.asText.map { it.trim() }
-
-// The release key's passwords come from the environment and nowhere else: a default written here
-// would be the password of the key that signs the published app, sitting in a public repository.
-val keystoreFile = rootProject.file("release.jks")
-val signingSecrets = listOf("KEYSTORE_PASSWORD", "KEY_ALIAS", "KEY_PASSWORD")
-    .associateWith { System.getenv(it) }
-val canSignRelease = keystoreFile.exists() && signingSecrets.values.all { !it.isNullOrBlank() }
-
-// Building a release without them would quietly produce an APK signed with the debug key, which
-// installs over nothing and is refused by Play, so a release build stops instead.
-gradle.taskGraph.whenReady {
-    val releasing = allTasks.any { it.name == "assembleRelease" || it.name == "bundleRelease" }
-    if (releasing && !canSignRelease) {
-        val missing = signingSecrets.filterValues { it.isNullOrBlank() }.keys
-        throw GradleException(
-            if (!keystoreFile.exists()) "release.jks is missing, so this release cannot be signed."
-            else "release.jks is present but ${missing.joinToString(", ")} is not set."
-        )
-    }
-}
-
-// One version string for the store listing, the APK and the About screen, counted from the commits
-// on the branch: Play refuses an upload whose code is not higher than the last one.
-val appVersionCode = gitCommitCountProvider.get().toInt()
-val appVersionName = "1.0.$appVersionCode"
 
 val generateBuildConfig = tasks.register("generateBuildConfig") {
     val outputDir = layout.buildDirectory.dir("generated/buildconfig")
@@ -79,9 +54,17 @@ kotlin {
         allWarningsAsErrors.set(true)
     }
 
-    androidTarget {
+    // The shared code as an Android library; the app itself, with its manifest, icons and signing,
+    // is the androidApp module.
+    android {
+        namespace = "it.bosler.numeracy.composeapp"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
+        }
+        androidResources {
+            enable = true
         }
     }
     
@@ -108,8 +91,10 @@ kotlin {
         binaries.executable()
     }
     
+    // Handing over the task rather than its directory makes every compilation, on every target,
+    // wait for BuildConfig to be written.
     sourceSets.commonMain {
-        kotlin.srcDir(layout.buildDirectory.dir("generated/buildconfig"))
+        kotlin.srcDir(generateBuildConfig)
     }
 
     sourceSets {
@@ -129,7 +114,6 @@ kotlin {
             implementation(libs.kotlinx.coroutinesTest)
         }
         androidMain.dependencies {
-            implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
         }
         jvmMain.dependencies {
@@ -138,60 +122,6 @@ kotlin {
         }
     }
 }
-
-android {
-    namespace = "it.bosler.numeracy"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-
-    defaultConfig {
-        applicationId = "it.bosler.numeracy"
-        minSdk = libs.versions.android.minSdk.get().toInt()
-        targetSdk = libs.versions.android.targetSdk.get().toInt()
-        // Play accepts an upload only when the code is higher than the last one, so it counts
-        // commits rather than being typed. The name is the same number, so the version in Settings
-        // and the version in the store are one string.
-        versionCode = appVersionCode
-        versionName = appVersionName
-    }
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
-    signingConfigs {
-        getByName("debug") {
-            // Uses default debug keystore
-        }
-        create("release") {
-            if (canSignRelease) {
-                storeFile = keystoreFile
-                storePassword = signingSecrets["KEYSTORE_PASSWORD"]
-                keyAlias = signingSecrets["KEY_ALIAS"]
-                keyPassword = signingSecrets["KEY_PASSWORD"]
-            }
-        }
-    }
-    buildTypes {
-        getByName("release") {
-            isMinifyEnabled = false
-            signingConfig = if (canSignRelease)
-                signingConfigs.getByName("release")
-            else
-                signingConfigs.getByName("debug")
-        }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-}
-
-dependencies {
-    debugImplementation(libs.compose.uiTooling)
-}
-
-tasks.matching { it.name.startsWith("compileKotlin") || it.name.startsWith("compile") && it.name.contains("Kotlin") }
-    .configureEach { dependsOn("generateBuildConfig") }
 
 // Writes what the renderer needs on its class path, so make-renders.sh can start several JVMs at
 // once: Compose draws one screen at a time in a process, and there are a hundred and thirty of them.

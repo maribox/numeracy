@@ -47,13 +47,13 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew :composeApp:assembleRelease :composeApp:bundleRelease
+        run: ./gradlew :androidApp:assembleRelease :androidApp:bundleRelease
 
       - name: Name the artifacts after the tag
         if: steps.tag.outputs.new_tag
         run: |
-          mv composeApp/build/outputs/apk/release/*.apk numeracy-${{ steps.tag.outputs.new_tag }}.apk
-          mv composeApp/build/outputs/bundle/release/*.aab numeracy-${{ steps.tag.outputs.new_tag }}.aab
+          mv androidApp/build/outputs/apk/release/*.apk numeracy-${{ steps.tag.outputs.new_tag }}.apk
+          mv androidApp/build/outputs/bundle/release/*.aab numeracy-${{ steps.tag.outputs.new_tag }}.aab
 
       - name: Create GitHub Release
         if: steps.tag.outputs.new_tag

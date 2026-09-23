@@ -7,7 +7,7 @@ Practice mental math tricks for squaring, multiplication, poker odds, tip calcul
 ## Build
 
 ```sh
-./gradlew :composeApp:assembleDebug      # Android APK
+./gradlew :androidApp:assembleDebug      # Android APK
 ./gradlew :composeApp:run                # Desktop (JVM)
 ```
 
