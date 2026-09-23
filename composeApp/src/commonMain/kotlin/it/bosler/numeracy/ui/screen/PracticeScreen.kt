@@ -85,6 +85,7 @@ import it.bosler.numeracy.ui.component.WeekdayPicker
 import it.bosler.numeracy.ui.component.question.QuestionDisplay
 import it.bosler.numeracy.util.PlatformBackHandler
 import it.bosler.numeracy.util.LocalClock
+import it.bosler.numeracy.util.oneDecimal
 import it.bosler.numeracy.util.showBackButton
 import it.bosler.numeracy.viewmodel.Fire
 import it.bosler.numeracy.viewmodel.PracticeViewModel
@@ -595,7 +596,7 @@ private fun FireBar(
 
     // Multiplier: ×1.0 at 0, ×6.0 at max
     val multiplier = 1.0f + displayLevel * 5f
-    val multiplierText = "\u00D7${String.format("%.1f", multiplier)}"
+    val multiplierText = "\u00D7${oneDecimal(multiplier.toDouble())}"
 
     // Pulse animation when hot
     val infiniteTransition = rememberInfiniteTransition()

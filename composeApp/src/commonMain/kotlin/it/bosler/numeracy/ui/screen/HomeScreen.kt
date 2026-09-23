@@ -1,5 +1,6 @@
 package it.bosler.numeracy.ui.screen
 
+import it.bosler.numeracy.util.toRadians
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -231,7 +232,7 @@ private fun GearButton(onClick: () -> Unit) {
             // Gear teeth (6 lines radiating outward)
             val teeth = 6
             for (i in 0 until teeth) {
-                val angle = Math.toRadians((i * 360.0 / teeth) - 90.0)
+                val angle = toRadians((i * 360.0 / teeth) - 90.0)
                 val cos = kotlin.math.cos(angle).toFloat()
                 val sin = kotlin.math.sin(angle).toFloat()
                 drawLine(

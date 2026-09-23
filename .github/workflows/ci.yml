@@ -31,6 +31,11 @@ jobs:
           name: test-reports
           path: composeApp/build/reports/tests/
 
+      # The web targets share the common code; a JVM-only call in it breaks them without breaking
+      # anything the Android build checks.
+      - name: Compile for the web
+        run: ./gradlew :composeApp:compileKotlinJs :composeApp:compileKotlinWasmJs
+
       - name: Build Android APK
         run: ./gradlew :androidApp:assembleDebug
 
@@ -39,3 +44,19 @@ jobs:
         with:
           name: numeracy-debug
           path: androidApp/build/outputs/apk/debug/*.apk
+
+  # iOS compiles only on macOS, and nothing else checks that the common code still builds there.
+  apple:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: jetbrains
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Compile for iOS
+        run: ./gradlew :composeApp:compileKotlinIosSimulatorArm64 :composeApp:compileKotlinIosArm64

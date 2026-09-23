@@ -1,5 +1,6 @@
 package it.bosler.numeracy.ui.component.question
 
+import it.bosler.numeracy.util.toRadians
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -498,7 +499,7 @@ fun SpeedConversionQuestionDisplay(problem: Problem, difficulty: Difficulty = Di
                 // Tick marks
                 for (i in 0..10) {
                     val angle = 135f + i * 27f
-                    val rad = Math.toRadians(angle.toDouble())
+                    val rad = toRadians(angle.toDouble())
                     val cos = kotlin.math.cos(rad).toFloat()
                     val sin = kotlin.math.sin(rad).toFloat()
                     val innerR = radius - 18f
@@ -513,7 +514,7 @@ fun SpeedConversionQuestionDisplay(problem: Problem, difficulty: Difficulty = Di
 
                 // Needle
                 val needleAngle = 135f + 270f * needleNorm
-                val needleRad = Math.toRadians(needleAngle.toDouble())
+                val needleRad = toRadians(needleAngle.toDouble())
                 val needleCos = kotlin.math.cos(needleRad).toFloat()
                 val needleSin = kotlin.math.sin(needleRad).toFloat()
                 val needleLen = radius - 22f
