@@ -123,25 +123,55 @@ class AnswerCorrectnessTest {
         violations.assertNone()
     }
 
+    /** What a dart named [name] scores, and whether it is a double for finishing. */
+    private fun dartValue(name: String): Pair<Int, Boolean> {
+        val number = name.substringAfterLast(' ').toIntOrNull()
+        return when {
+            name == "Bull" -> 50 to true
+            name == "Single Bull" -> 25 to false
+            name == "Miss" -> 0 to false
+            name.startsWith("Triple") -> 3 * number!! to false
+            name.startsWith("Double") -> 2 * number!! to true
+            else -> number!! to false
+        }
+    }
+
     @Test
-    fun dartsSubtractsTheThrowItNames() {
-        val violations = Violations("wrong darts arithmetic")
+    fun dartsScoresByTheRulesOf501DoubleOut() {
+        val violations = Violations("darts scored against the rules")
         for (sample in samplesOf(ScenarioType.DARTS)) {
             val m = sample.problem.metadata
-            val name = m.getValue("throwName")
-            val number = name.substringAfterLast(' ').toIntOrNull()
-            val value = when {
-                name == "Bull" -> 50
-                name == "Single Bull" -> 25
-                name.startsWith("Triple") -> 3 * number!!
-                name.startsWith("Double") -> 2 * number!!
-                else -> number!!
-            }
-            violations.check(m.getValue("throwValue").toInt() == value, sample) { "$name is worth $value" }
-            val expected = m.getValue("currentScore").toInt() - value
+            val (value, isDouble) = dartValue(m.getValue("throwName"))
+            violations.check(m.getValue("throwValue").toInt() == value, sample) { "${m["throwName"]} is worth $value" }
+            val before = m.getValue("currentScore").toInt()
+            val left = before - value
+            val bust = left < 0 || left == 1 || (left == 0 && !isDouble)
+            violations.check(m.getValue("bust").toBoolean() == bust, sample) { "bust should be $bust" }
+            val expected = if (bust) m.getValue("visitStart").toInt() else left
             violations.check(sample.problem.correctAnswer == expected.toString(), sample) { "expected $expected" }
         }
         violations.assertNone()
+    }
+
+    @Test
+    fun aLegOfDartsIsPlayedInVisitsOfThreeFrom501() {
+        val generator = DartsGenerator(kotlin.random.Random(11))
+        var score = 501
+        var visitStart = 501
+        var dart = 1
+        var legsWon = 0
+        repeat(20_000) { index ->
+            val m = generator.generate().metadata
+            if (score == 0) { score = 501; visitStart = 501; dart = 1; legsWon++ }
+            check(m.getValue("currentScore").toInt() == score) { "dart $index: score ${m["currentScore"]}, expected $score" }
+            check(m.getValue("visitStart").toInt() == visitStart) { "dart $index: scoreboard ${m["visitStart"]}, expected $visitStart" }
+            check(m.getValue("dartInVisit").toInt() == dart) { "dart $index: dart ${m["dartInVisit"]} of the visit, expected $dart" }
+            score = m.getValue("newScore").toInt()
+            val bust = m.getValue("bust").toBoolean()
+            if (score == 0) check(dartValue(m.getValue("throwName")).second) { "a leg won on ${m["throwName"]}" }
+            if (bust || dart == 3 || score == 0) { visitStart = score; dart = 1 } else dart++
+        }
+        check(legsWon > 100) { "only $legsWon legs finished in 20,000 darts" }
     }
 
     @Test
@@ -209,12 +239,15 @@ class AnswerCorrectnessTest {
         violations.assertNone()
     }
 
-    /** UTC offsets in minutes, winter and summer, for the cities the scenario uses. */
+    /**
+     * UTC offsets in minutes in January and in July. Sydney and Auckland keep daylight saving in
+     * January, their summer; the northern cities in July; Mumbai and Tokyo never.
+     */
     private val offsets = mapOf(
         "New York" to (-300 to -240), "Chicago" to (-360 to -300), "Denver" to (-420 to -360),
         "Los Angeles" to (-480 to -420), "London" to (0 to 60), "Berlin" to (60 to 120),
         "Helsinki" to (120 to 180), "Mumbai" to (330 to 330), "Tokyo" to (540 to 540),
-        "Sydney" to (600 to 660), "Auckland" to (720 to 780),
+        "Sydney" to (660 to 600), "Auckland" to (780 to 720),
     )
 
     @Test
@@ -222,8 +255,8 @@ class AnswerCorrectnessTest {
         val violations = Violations("wrong times")
         for (sample in samplesOf(ScenarioType.TIME_ZONES)) {
             val m = sample.problem.metadata
-            val summer = m["season"] == "summer"
-            fun offset(city: String) = offsets.getValue(city).let { if (summer) it.second else it.first }
+            val july = m.getValue("month") == "July"
+            fun offset(city: String) = offsets.getValue(city).let { if (july) it.second else it.first }
             val (h, min) = m.getValue("time").split(":").map { it.toInt() }
             val total = ((h * 60 + min + offset(m.getValue("toCity")) - offset(m.getValue("fromCity"))) % 1440 + 1440) % 1440
             val expected = "${(total / 60).toString().padStart(2, '0')}:${(total % 60).toString().padStart(2, '0')}"

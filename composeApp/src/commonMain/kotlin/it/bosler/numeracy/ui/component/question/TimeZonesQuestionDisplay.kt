@@ -35,32 +35,26 @@ fun TimeZonesQuestionDisplay(problem: Problem, difficulty: Difficulty = Difficul
     val fromCity = problem.metadata["fromCity"] ?: ""
     val toCity = problem.metadata["toCity"] ?: ""
     val time = problem.metadata["time"] ?: "00:00"
-    val season = problem.metadata["season"] ?: "winter"
+    // The month, not a season: July is summer in London and winter in Auckland, and each city
+    // keeps its own clocks.
+    val month = problem.metadata["month"] ?: "January"
     val isPractice = difficulty == Difficulty.PRACTICE || difficulty == Difficulty.LEARNING
-
-    val isSummer = season == "summer"
 
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Season badge
+        // Month badge
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
-                .background(
-                    if (isSummer) MaterialTheme.colorScheme.secondaryContainer
-                    else MaterialTheme.colorScheme.primaryContainer
-                )
+                .background(MaterialTheme.colorScheme.secondaryContainer)
                 .padding(horizontal = 12.dp, vertical = 4.dp),
         ) {
             Text(
-                text = if (isSummer) "\u2600\uFE0F Summer" else "\u2744\uFE0F Winter",
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                ),
-                color = if (isSummer) MaterialTheme.colorScheme.onSecondaryContainer
-                        else MaterialTheme.colorScheme.onPrimaryContainer,
+                text = "\uD83D\uDCC5 $month",
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
             )
         }
 

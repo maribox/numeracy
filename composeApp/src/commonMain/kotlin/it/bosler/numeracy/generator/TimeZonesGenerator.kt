@@ -6,25 +6,29 @@ import kotlin.random.Random
 
 class TimeZonesGenerator(private val rng: Random = Random.Default) : ProblemGenerator {
 
+    /**
+     * A city's offset from UTC, in minutes, in January and in July. Clocks go forward in their own
+     * summer: the northern cities in July, Sydney and Auckland in January, India and Japan never.
+     * Mid-January and mid-July lie clear of every changeover, where the US and Europe differ by weeks.
+     */
     data class TimeZone(
-        val name: String,
         val city: String,
-        val offsetWinter: Int, // offset from UTC in minutes
-        val offsetSummer: Int, // offset from UTC in minutes (DST)
+        val offsetJanuary: Int,
+        val offsetJuly: Int,
     )
 
     private val timeZones = listOf(
-        TimeZone("EST", "New York", -300, -240),
-        TimeZone("CST", "Chicago", -360, -300),
-        TimeZone("MST", "Denver", -420, -360),
-        TimeZone("PST", "Los Angeles", -480, -420),
-        TimeZone("GMT", "London", 0, 60),
-        TimeZone("CET", "Berlin", 60, 120),
-        TimeZone("EET", "Helsinki", 120, 180),
-        TimeZone("IST", "Mumbai", 330, 330), // India doesn't observe DST
-        TimeZone("JST", "Tokyo", 540, 540), // Japan doesn't observe DST
-        TimeZone("AEST", "Sydney", 600, 660),
-        TimeZone("NZST", "Auckland", 720, 780),
+        TimeZone("New York", -300, -240),
+        TimeZone("Chicago", -360, -300),
+        TimeZone("Denver", -420, -360),
+        TimeZone("Los Angeles", -480, -420),
+        TimeZone("London", 0, 60),
+        TimeZone("Berlin", 60, 120),
+        TimeZone("Helsinki", 120, 180),
+        TimeZone("Mumbai", 330, 330),
+        TimeZone("Tokyo", 540, 540),
+        TimeZone("Sydney", 660, 600),
+        TimeZone("Auckland", 780, 720),
     )
 
     override fun generate(): Problem {
@@ -34,14 +38,14 @@ class TimeZonesGenerator(private val rng: Random = Random.Default) : ProblemGene
             to = timeZones[rng.nextInt(timeZones.size)]
         }
 
-        val isSummer = rng.nextBoolean()
-        val season = if (isSummer) "summer" else "winter"
+        val inJuly = rng.nextBoolean()
+        val month = if (inJuly) "July" else "January"
 
         val hour = rng.nextInt(6, 23)
         val minute = listOf(0, 15, 30, 45)[rng.nextInt(4)]
 
-        val fromOffset = if (isSummer) from.offsetSummer else from.offsetWinter
-        val toOffset = if (isSummer) to.offsetSummer else to.offsetWinter
+        val fromOffset = if (inJuly) from.offsetJuly else from.offsetJanuary
+        val toOffset = if (inJuly) to.offsetJuly else to.offsetJanuary
         val diffMinutes = toOffset - fromOffset
 
         var resultMinutes = hour * 60 + minute + diffMinutes
@@ -73,7 +77,7 @@ class TimeZonesGenerator(private val rng: Random = Random.Default) : ProblemGene
 
         return Problem(
             scenarioType = ScenarioType.TIME_ZONES,
-            questionText = "It's ${formatTime(hour, minute)} in ${from.city} (${season} time).\n\nWhat time is it in ${to.city}?",
+            questionText = "It's ${formatTime(hour, minute)} in ${from.city} in $month.\n\nWhat time is it in ${to.city}?",
             correctAnswer = answer,
             inputType = it.bosler.numeracy.model.InputType.TIME,
             explanation = "${from.city} → ${to.city}: $diffStr → $answer",
@@ -81,7 +85,7 @@ class TimeZonesGenerator(private val rng: Random = Random.Default) : ProblemGene
                 "fromCity" to from.city,
                 "toCity" to to.city,
                 "time" to formatTime(hour, minute),
-                "season" to season,
+                "month" to month,
                 // Practice mode helper
                 "offsetDiff" to offsetDiffDisplay,
             ),

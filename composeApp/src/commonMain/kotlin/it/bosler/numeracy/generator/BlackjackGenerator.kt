@@ -1,16 +1,26 @@
 package it.bosler.numeracy.generator
 
+import it.bosler.numeracy.model.Card
 import it.bosler.numeracy.model.Problem
+import it.bosler.numeracy.model.Suit
 import it.bosler.numeracy.model.ScenarioType
 import kotlin.random.Random
 
+/**
+ * Hands as a real blackjack table deals them: from a six-deck shoe that runs down between shuffles,
+ * and played to a decision the way a player using basic strategy plays against the dealer's upcard.
+ * A hand never takes a card at 21 or after it has bust, and a doubled hand takes exactly one.
+ */
 class BlackjackGenerator(private val rng: Random = Random.Default) : ProblemGenerator {
 
-    private val cardNames = listOf("2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A")
+    private val shoe = Shoe(rng)
 
     override fun generate(): Problem {
-        val numCards = rng.nextInt(2, 6)
-        val cards = (1..numCards).map { cardNames[rng.nextInt(cardNames.size)] }
+        val dealt = mutableListOf<Card>()
+        fun next(): String = shoe.draw().also { dealt += it }.blackjackName
+        val upcard = shoe.draw().blackjackName
+        val cards = playHand(listOf(next(), next()), upcard) { next() }
+        val suits = suitsOf(cards, dealt)
         val bestTotal = calculateBestTotal(cards)
 
         val cardsDisplay = cards.joinToString(", ")
@@ -26,12 +36,26 @@ class BlackjackGenerator(private val rng: Random = Random.Default) : ProblemGene
             explanation = buildExplanation(cards, bestTotal),
             metadata = mapOf(
                 "cards" to cards.joinToString(","),
+                "suits" to suits.joinToString(",") { it.symbol },
+                "dealerUpcard" to upcard,
                 // Practice mode helpers: pre-computed group totals
                 "faceTotal" to (faceCards.size * 10).toString(),
                 "numberTotal" to numberCards.sumOf { it.toInt() }.toString(),
                 "aceCount" to aceCount.toString(),
             ),
         )
+    }
+
+    /**
+     * The suits of the cards that ended in the hand, in order. A split sends the second card of the
+     * pair to the other hand, so the hand is the dealt cards with that one left out, matched in order.
+     */
+    private fun suitsOf(hand: List<String>, dealt: List<Card>): List<Suit> {
+        var at = 0
+        return hand.map { name ->
+            while (dealt[at].blackjackName != name) at++
+            dealt[at++].suit
+        }
     }
 
     private fun calculateBestTotal(cards: List<String>): Int {

@@ -262,8 +262,8 @@ private fun PokerChip(label: String, value: String, isPrimary: Boolean) {
 
 @Composable
 private fun StreetBadge(street: String) {
-    val multiplier = if (street == "Flop") "4" else "2"
-    val description = if (street == "Flop") "2 cards to come \u2192 outs \u00D7 4" else "1 card to come \u2192 outs \u00D7 2"
+    // Both cards come for one call only when the opponent is all in, which the flop questions are.
+    val description = if (street == "Flop") "all in, 2 cards to come \u2192 outs \u00D7 4" else "1 card to come \u2192 outs \u00D7 2"
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
@@ -271,7 +271,7 @@ private fun StreetBadge(street: String) {
             .padding(horizontal = 14.dp, vertical = 6.dp),
     ) {
         Text(
-            text = "$street \u2014 $description",
+            text = "$street \u00B7 $description",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

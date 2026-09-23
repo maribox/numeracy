@@ -60,6 +60,9 @@ fun DartsQuestionDisplay(
     val throwValue = problem.metadata["throwValue"] ?: "0"
     val throwValueInt = throwValue.toIntOrNull() ?: 0
     val currentScoreInt = currentScore.toIntOrNull() ?: 301
+    val scoreboard = problem.metadata["visitStart"] ?: currentScore
+    val dartInVisit = problem.metadata["dartInVisit"] ?: "1"
+    val bust = problem.metadata["bust"] == "true"
 
     val multiplier: Int
     val baseNumber: String
@@ -86,7 +89,24 @@ fun DartsQuestionDisplay(
         else -> Color(0xFF455A64)
     }
 
-    if (difficulty == Difficulty.LEARNING) {
+    // The scoreboard shows what was left when the visit began, as a real one does: a bust sends the
+    // score back there, so it is the one number a player has to keep besides the running total.
+    Text(
+        text = "Scoreboard $scoreboard \u00B7 dart $dartInVisit of 3",
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+        textAlign = TextAlign.Center,
+    )
+
+    if (difficulty == Difficulty.LEARNING && bust) {
+        BustExplanation(
+            score = currentScoreInt,
+            throwValue = throwValueInt,
+            scoreboard = scoreboard,
+            throwName = throwName,
+        )
+    } else if (difficulty == Difficulty.LEARNING) {
         // LEARNING MODE: Visual column subtraction layout
         LearningModeDisplay(
             currentScore = currentScore,
@@ -112,6 +132,37 @@ fun DartsQuestionDisplay(
             difficulty = difficulty,
             hideScore = hideScore,
             answered = answered,
+        )
+    }
+}
+
+/** Learning mode for a dart that busts: there is no subtraction to work, only the rule. */
+@Composable
+private fun BustExplanation(score: Int, throwValue: Int, scoreboard: String, throwName: String) {
+    val left = score - throwValue
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = "$score \u2212 $throwValue = $left",
+            style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black),
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Text(
+            text = when {
+                left < 0 -> "Below zero: bust"
+                left == 1 -> "1 cannot be finished on a double: bust"
+                else -> "$throwName is not a double: bust"
+            },
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            color = Color(0xFFC62828),
+        )
+        Text(
+            text = "Back to $scoreboard",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

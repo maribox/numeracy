@@ -338,6 +338,9 @@ private fun DartsInfo() {
         "be a Single (\u00D71), Double (\u00D72), or Triple (\u00D73). The bullseye is worth 50, " +
         "and the single bull (outer ring) is worth 25."
     )
+    BulletPoint("Three darts make a visit. The scoreboard shows the score at the start of the visit.")
+    BulletPoint("The last dart must be a double; the bullseye counts as one.")
+    BulletPoint("Bust: a dart that leaves less than zero, leaves 1, or reaches zero without a double. The whole visit counts for nothing and the score goes back to the scoreboard.")
 
     SectionDivider()
 
@@ -432,7 +435,7 @@ private fun DartsInfo() {
     NumberedStep(1, "Start with single-digit subtractions (Single throws). Get comfortable with ones-column subtraction.")
     NumberedStep(2, "Add doubles. Practice the complement method when the ones digit borrows.")
     NumberedStep(3, "Add triples. First multiply (e.g., 19\u00D73=57), then subtract. Practice both steps as one fluid motion.")
-    NumberedStep(4, "Speed drill: try to answer within 3 seconds. Most competitive darts players can do this in under 2 seconds.")
+    NumberedStep(4, "Speed drill: try to answer within 3 seconds.")
 
     SectionDivider()
 
@@ -464,8 +467,7 @@ private fun BlackjackInfo() {
 
     SectionTitle("The Grouping Strategy")
     BodyText(
-        "Don't add cards one by one. Instead, scan the hand and group cards that add up to convenient totals. " +
-        "This is how casino dealers count quickly."
+        "Don't add cards one by one. Instead, scan the hand and group cards that add up to convenient totals."
     )
 
     SubTitle("Pair to 10")
@@ -486,11 +488,11 @@ private fun BlackjackInfo() {
 
     ExampleBox {
         Column {
-            MonoText("Hand: K \u2663  7 \u2665  3 \u2660  Q \u2666")
+            MonoText("Hand: 3 \u2660  2 \u2665  K \u2663  7 \u2666")
             Spacer(modifier = Modifier.height(4.dp))
-            MonoText("Face cards: K + Q = 20")
-            MonoText("Remaining: 7 + 3 = 10")
-            MonoText("Total: 20 + 10 = 30 (bust!)")
+            MonoText("Face card: K = 10")
+            MonoText("Pair to 10: 3 + 7 = 10")
+            MonoText("Total: 10 + 10 + 2 = 22 (bust!)")
         }
     }
 
@@ -506,9 +508,9 @@ private fun BlackjackInfo() {
 
     ExampleBox {
         Column {
-            MonoText("Hand: 9 \u2660  A \u2665  A \u2663  8 \u2666")
+            MonoText("Hand: 9 \u2660  3 \u2665  A \u2663  A \u2666  5 \u2665")
             Spacer(modifier = Modifier.height(4.dp))
-            MonoText("Cards: 9 + 8 = 17")
+            MonoText("Cards: 9 + 3 + 5 = 17")
             MonoText("Two Aces: try first as 11 \u2192 17+11 = 28 (bust)")
             MonoText("Both as 1: 17 + 1 + 1 = 19 \u2714")
         }
@@ -516,12 +518,12 @@ private fun BlackjackInfo() {
 
     ExampleBox {
         Column {
-            MonoText("Hand: 4 \u2665  6 \u2660  J \u2663  2 \u2666  5 \u2665")
+            MonoText("Hand: 2 \u2666  4 \u2665  3 \u2660  6 \u2660  J \u2663")
             Spacer(modifier = Modifier.height(4.dp))
             MonoText("Face cards: J = 10")
             MonoText("Group: 4 + 6 = 10")
-            MonoText("Remaining: 2 + 5 = 7")
-            MonoText("Total: 10 + 10 + 7 = 27 (bust)")
+            MonoText("Remaining: 2 + 3 = 5")
+            MonoText("Total: 10 + 10 + 5 = 25 (bust)")
         }
     }
 
@@ -541,9 +543,9 @@ private fun BlackjackInfo() {
 
     SectionTitle("Speed Tips")
     BulletPoint("Scan for face cards first - they're visually distinct and each worth exactly 10.")
-    BulletPoint("With 2 face cards, you start at 20. You just need to check if the remaining cards will bust you.")
+    BulletPoint("Nobody draws to 17 or more, so in a hand of four or five cards the small cards came first and the ten, if there is one, came last.")
     BulletPoint("Look for complementary pairs (3+7, 4+6, 5+5) before adding sequentially.")
-    BulletPoint("Practice counting 5-card hands in under 2 seconds - that's dealer speed.")
+    BulletPoint("Practice counting 5-card hands in under 2 seconds.")
 
     Spacer(modifier = Modifier.height(16.dp))
 }
@@ -947,6 +949,7 @@ private fun TimeZonesInfo() {
     ChipRow(listOf(
         "London" to "0 / +1",
         "Berlin" to "+1 / +2",
+        "Helsinki" to "+2 / +3",
         "Moscow" to "+3",
         "Dubai" to "+4",
         "Mumbai" to "+5:30",
@@ -960,6 +963,7 @@ private fun TimeZonesInfo() {
         "Denver" to "\u22127 / \u22126",
         "Los Angeles" to "\u22128 / \u22127",
     ))
+    BulletPoint("Daylight saving is the local summer: July for the northern cities, January for Sydney and Auckland. Mumbai and Tokyo never change.")
 
     SectionDivider()
 

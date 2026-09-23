@@ -35,6 +35,7 @@ import it.bosler.numeracy.model.Problem
 @Composable
 fun BlackjackQuestionDisplay(problem: Problem, difficulty: Difficulty = Difficulty.NORMAL) {
     val cards = problem.metadata["cards"]?.split(",") ?: emptyList()
+    val suits = problem.metadata["suits"]?.split(",") ?: emptyList()
     val isPractice = difficulty == Difficulty.PRACTICE || difficulty == Difficulty.LEARNING
 
     Column(
@@ -49,6 +50,7 @@ fun BlackjackQuestionDisplay(problem: Problem, difficulty: Difficulty = Difficul
             cards.forEachIndexed { index, card ->
                 PlayingCard(
                     value = card,
+                    suit = suits.getOrElse(index) { "\u2660" },
                     rotation = (index - cards.size / 2f) * 5f,
                 )
             }
@@ -96,11 +98,11 @@ fun BlackjackQuestionDisplay(problem: Problem, difficulty: Difficulty = Difficul
 }
 
 @Composable
-private fun PlayingCard(value: String, rotation: Float) {
-    val isRed = value in listOf("2", "4", "6", "8", "10")
+private fun PlayingCard(value: String, suit: String, rotation: Float) {
+    // Hearts and diamonds are red, spades and clubs black, as on any card.
+    val isRed = suit == "\u2665" || suit == "\u2666"
     val cardColor = if (isRed) MaterialTheme.colorScheme.error
                    else MaterialTheme.colorScheme.onSurface
-    val suit = if (isRed) "\u2666" else "\u2660"
 
     Box(
         modifier = Modifier

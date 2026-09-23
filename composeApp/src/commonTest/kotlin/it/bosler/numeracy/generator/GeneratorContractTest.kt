@@ -63,8 +63,8 @@ class GeneratorContractTest {
     private val displayedKeys: Map<ScenarioType, Set<String>> = run {
         val conversion = setOf("value", "fromUnit", "toUnit", "context", "trick", "trickSteps")
         mapOf(
-            ScenarioType.DARTS to setOf("currentScore", "throwName", "throwValue"),
-            ScenarioType.BLACKJACK to setOf("cards", "faceTotal", "numberTotal", "aceCount"),
+            ScenarioType.DARTS to setOf("currentScore", "throwName", "throwValue", "visitStart", "dartInVisit", "bust"),
+            ScenarioType.BLACKJACK to setOf("cards", "suits", "faceTotal", "numberTotal", "aceCount"),
             ScenarioType.POT_ODDS to setOf(
                 "potAmount", "callAmount", "totalPot", "potOdds", "fraction", "holeCards", "boardCards",
                 "street", "winPercent",
@@ -75,7 +75,7 @@ class GeneratorContractTest {
             ),
             ScenarioType.MAKING_CHANGE to setOf("billAmount", "paymentAmount", "centsChange", "eurosChange"),
             ScenarioType.CURRENCY_EXCHANGE to setOf("fromAmount", "rate", "toCurrencyCode", "wholeResult", "practiceHint"),
-            ScenarioType.TIME_ZONES to setOf("fromCity", "toCity", "time", "season", "offsetDiff"),
+            ScenarioType.TIME_ZONES to setOf("fromCity", "toCity", "time", "month", "offsetDiff"),
             ScenarioType.LENGTH_CONVERSION to conversion,
             ScenarioType.WEIGHT_CONVERSION to conversion,
             ScenarioType.VOLUME_CONVERSION to conversion,

@@ -4,7 +4,6 @@ import it.bosler.numeracy.model.Difficulty
 import it.bosler.numeracy.model.InputType
 import it.bosler.numeracy.model.Problem
 import it.bosler.numeracy.model.ScenarioType
-import it.bosler.numeracy.model.fullDeck
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
@@ -22,14 +21,14 @@ class PokerGenerator(
         val simplNum = callAmount / gcd
         val simplDen = totalPot / gcd
 
-        val deck = fullDeck().shuffled(rng)
-        val hole = deck.take(2)
-        val boardSize = if (rng.nextBoolean()) 3 else 4
-        val board = deck.drop(2).take(boardSize)
-        val street = if (boardSize == 3) "Flop" else "Turn"
-
-        // Win% shown for context on HARD and NORMAL (teaches call/fold decision)
-        val winPercent = (15..65).random(rng)
+        // A real drawing hand, and the real chance it comes in by the river: the win% the call is
+        // weighed against, worked out from the cards on the table rather than picked.
+        val onFlop = rng.nextBoolean()
+        val deal = dealDraw(DrawKind.entries.random(rng), onFlop, rng)
+        val hole = deal.hole
+        val board = deal.board
+        val street = if (onFlop) "Flop" else "Turn"
+        val winPercent = deal.hitPercent.roundToInt()
 
         return Problem(
             scenarioType = ScenarioType.POT_ODDS,
@@ -50,6 +49,7 @@ class PokerGenerator(
                 "boardCards" to board.joinToString(",") { it.display },
                 "street" to street,
                 "winPercent" to winPercent.toString(),
+                "drawName" to deal.kind.displayName,
             ),
         )
     }
