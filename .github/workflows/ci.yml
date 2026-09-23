@@ -51,9 +51,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Temurin comes from its own mirror; the JetBrains runtime is looked up through the GitHub API,
+      # which rate-limits shared macOS runners.
       - uses: actions/setup-java@v4
         with:
-          distribution: jetbrains
+          distribution: temurin
           java-version: 21
 
       - uses: gradle/actions/setup-gradle@v4
